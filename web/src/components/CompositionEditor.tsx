@@ -115,6 +115,7 @@ export function CompositionEditor({
   const [cellSelection, setCellSelection] = useState<CellSelection | null>(null);
   const [cellClipboard, setCellClipboard] = useState<string[]>([]);
   const [advanceAfterInsert, setAdvanceAfterInsert] = useState(true);
+  const [rangeSelectMode, setRangeSelectMode] = useState(false);
   const [bulkImportText, setBulkImportText] = useState("");
   const [userQuickInsertBols, setUserQuickInsertBols] = useState<
     QuickInsertBol[]
@@ -939,6 +940,11 @@ export function CompositionEditor({
                 ? `Selected: ${currentSectionLabel ? `${currentSectionLabel}, ` : ""}Line ${activeCell!.lineIndex + 1}, ${selectedCellCount > 1 ? `${selectedCellCount} matras` : `Matra ${activeCell!.cellIndex + 1}`}`
                 : "Select a matra cell, then tap a bol."}
             </p>
+            {rangeSelectMode && (
+              <p className="mt-1 text-xs font-medium text-maroon">
+                Range select is on. Tap another cell in the same line.
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -954,7 +960,11 @@ export function CompositionEditor({
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setActiveCell(null)}
+              onClick={() => {
+                setActiveCell(null);
+                setCellSelection(null);
+                setRangeSelectMode(false);
+              }}
               className="rounded-full border border-ink/15 bg-white px-3 py-1.5 text-xs text-ink/60 hover:bg-ink/5"
             >
               Done
@@ -963,6 +973,19 @@ export function CompositionEditor({
         </div>
 
         <div className="mb-2 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={!activeMatraCell}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setRangeSelectMode((current) => !current)}
+            className={`rounded-full border px-3 py-1.5 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-45 ${
+              rangeSelectMode
+                ? "border-maroon bg-maroon text-parchment"
+                : "border-parchment-dark bg-white text-ink/70 hover:border-saffron"
+            }`}
+          >
+            Range select
+          </button>
           <button
             type="button"
             disabled={!activeMatraCell}
@@ -1208,12 +1231,30 @@ export function CompositionEditor({
                 >
                   {group.cells.map((cell, offset) => {
                     const cellIndex = group.startIndex + offset;
+                    const selectedForCopy = isCellSelected(
+                      lineIndex,
+                      cellIndex,
+                    );
+                    const activeForEdit =
+                      activeCell?.lineIndex === lineIndex &&
+                      activeCell?.cellIndex === cellIndex;
 
                     return (
                       <div
                         key={cellIndex}
-                        className="flex w-[4.5rem] shrink-0 flex-col items-stretch"
+                        className={`relative flex w-[4.5rem] shrink-0 flex-col items-stretch rounded-lg p-1 transition ${
+                          selectedForCopy
+                            ? "bg-saffron/20 ring-2 ring-maroon/45 shadow-sm"
+                            : activeForEdit
+                              ? "bg-white ring-1 ring-saffron/35"
+                              : "bg-transparent"
+                        }`}
                       >
+                        {selectedForCopy && (
+                          <span className="pointer-events-none absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-maroon px-1 text-[10px] font-semibold text-parchment shadow-sm">
+                            {cellIndex + 1}
+                          </span>
+                        )}
                         <select
                           value={
                             cell.marker
@@ -1273,7 +1314,9 @@ export function CompositionEditor({
                             });
                           }}
                           onFocus={(e) => {
-                            selectCell(lineIndex, cellIndex);
+                            if (!rangeSelectMode) {
+                              selectCell(lineIndex, cellIndex);
+                            }
                             rememberActiveCell(
                               lineIndex,
                               cellIndex,
@@ -1281,11 +1324,11 @@ export function CompositionEditor({
                             );
                           }}
                           onClick={(e) => {
-                            if (e.shiftKey) {
-                              selectCell(lineIndex, cellIndex, true);
-                            } else {
-                              selectCell(lineIndex, cellIndex);
-                            }
+                            selectCell(
+                              lineIndex,
+                              cellIndex,
+                              e.shiftKey || rangeSelectMode,
+                            );
                             rememberActiveCell(
                               lineIndex,
                               cellIndex,
@@ -1310,6 +1353,9 @@ export function CompositionEditor({
                             updateCell(lineIndex, cellIndex, {
                               devanagari: e.target.value,
                             });
+                            if (rangeSelectMode) {
+                              setRangeSelectMode(false);
+                            }
                             rememberActiveCell(
                               lineIndex,
                               cellIndex,
@@ -1317,10 +1363,9 @@ export function CompositionEditor({
                             );
                           }}
                           className={`font-devanagari rounded border bg-white px-1 py-1.5 text-center text-lg font-semibold focus:border-saffron focus:ring-1 focus:ring-saffron/30 focus:outline-none ${
-                            isCellSelected(lineIndex, cellIndex)
+                            selectedForCopy
                               ? "border-maroon bg-saffron/10 ring-2 ring-saffron/40"
-                              : activeCell?.lineIndex === lineIndex &&
-                                  activeCell?.cellIndex === cellIndex
+                              : activeForEdit
                               ? "border-saffron ring-1 ring-saffron/30"
                               : "border-parchment-dark"
                           }`}
