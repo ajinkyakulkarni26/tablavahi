@@ -4,9 +4,13 @@ import type {
   Composition,
   CompositionKind,
   CompositionLine,
+  CompositionLineSection,
   MatraCell,
 } from "../types";
-import { COMPOSITION_KIND_LABELS } from "../types";
+import {
+  COMPOSITION_KIND_LABELS,
+  COMPOSITION_LINE_SECTION_LABELS,
+} from "../types";
 import { TAALS, getTaal } from "../data/taals";
 import {
   applyTaalMarkers,
@@ -38,6 +42,10 @@ function cellKey(lineIndex: number, cellIndex: number): string {
   return `${lineIndex}-${cellIndex}`;
 }
 
+function defaultSectionForKind(kind: CompositionKind): CompositionLineSection {
+  return kind === "kayda" ? "kayda" : "other";
+}
+
 export function CompositionEditor({
   initial,
   onSave,
@@ -52,15 +60,31 @@ export function CompositionEditor({
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [guruNote, setGuruNote] = useState(initial?.guruNote ?? "");
   const [lines, setLines] = useState<CompositionLine[]>(
-    initial?.lines ?? [newLineForTaal(getTaal("teentaal")!)],
+    initial?.lines ?? [
+      {
+        ...newLineForTaal(getTaal("teentaal")!),
+        section: "kayda",
+        sectionTitle: "Main Kayda",
+      },
+    ],
   );
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
   const [advanceAfterInsert, setAdvanceAfterInsert] = useState(true);
   const cellInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const taal = useMemo(() => getTaal(taalId), [taalId]);
+  const isKayda = kind === "kayda";
+  const activeLine =
+    activeCell != null ? lines[activeCell.lineIndex] : undefined;
   const activeMatraCell =
-    activeCell != null ? lines[activeCell.lineIndex]?.cells[activeCell.cellIndex] : undefined;
+    activeCell != null ? activeLine?.cells[activeCell.cellIndex] : undefined;
+  const currentSectionLabel =
+    activeLine != null
+      ? (activeLine.sectionTitle?.trim() ||
+        (activeLine.section
+          ? COMPOSITION_LINE_SECTION_LABELS[activeLine.section]
+          : "Unsectioned"))
+      : "";
 
   const rememberActiveCell = (
     lineIndex: number,
@@ -136,10 +160,37 @@ export function CompositionEditor({
           ...cell,
           devanagari: line.cells[i]?.devanagari ?? "",
         }));
-        return { cells: applyTaalMarkers(cells, newTaal) };
+        return { ...line, cells: applyTaalMarkers(cells, newTaal) };
       }),
     );
   }, []);
+
+  const countSection = (section: CompositionLineSection) =>
+    lines.filter((line) => line.section === section).length;
+
+  const defaultSectionTitle = (section: CompositionLineSection): string => {
+    switch (section) {
+      case "kayda":
+        return "Main Kayda";
+      case "prakaar":
+        return `Prakar ${countSection("prakaar") + 1}`;
+      case "tihai":
+        return "Tihai";
+      case "other":
+        return "";
+      default:
+        return "";
+    }
+  };
+
+  const createSectionLine = (
+    section: CompositionLineSection = defaultSectionForKind(kind),
+    sectionTitle = defaultSectionTitle(section),
+  ): CompositionLine => ({
+    ...newLineForTaal(taal!),
+    section,
+    sectionTitle: sectionTitle || undefined,
+  });
 
   const updateCell = (
     lineIndex: number,
@@ -155,9 +206,11 @@ export function CompositionEditor({
     });
   };
 
-  const addLine = () => {
+  const addLine = (
+    section: CompositionLineSection = defaultSectionForKind(kind),
+  ) => {
     if (!taal) return;
-    setLines((prev) => [...prev, newLineForTaal(taal)]);
+    setLines((prev) => [...prev, createSectionLine(section)]);
   };
 
   const removeLine = (index: number) => {
@@ -169,6 +222,17 @@ export function CompositionEditor({
       const copy = structuredClone(prev[index]);
       const next = [...prev];
       next.splice(index + 1, 0, copy);
+      return next;
+    });
+  };
+
+  const updateLineSection = (
+    lineIndex: number,
+    patch: Partial<Pick<CompositionLine, "section" | "sectionTitle">>,
+  ) => {
+    setLines((prev) => {
+      const next = [...prev];
+      next[lineIndex] = { ...next[lineIndex], ...patch };
       return next;
     });
   };
@@ -310,7 +374,21 @@ export function CompositionEditor({
           </span>
           <select
             value={kind}
-            onChange={(e) => setKind(e.target.value as CompositionKind)}
+            onChange={(e) => {
+              const nextKind = e.target.value as CompositionKind;
+              setKind(nextKind);
+              if (nextKind === "kayda") {
+                setLines((prev) =>
+                  prev.map((line, index) => ({
+                    ...line,
+                    section: line.section ?? (index === 0 ? "kayda" : "prakaar"),
+                    sectionTitle:
+                      line.sectionTitle ??
+                      (index === 0 ? "Main Kayda" : `Prakar ${index}`),
+                  })),
+                );
+              }
+            }}
             className="mt-1 w-full rounded-lg border border-parchment-dark bg-parchment px-3 py-2"
           >
             {(Object.keys(COMPOSITION_KIND_LABELS) as CompositionKind[]).map(
@@ -353,14 +431,50 @@ export function CompositionEditor({
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <p className="font-devanagari text-sm text-ink/70">{mr.editorHint}</p>
-        <button
-          type="button"
-          onClick={addLine}
-          className="rounded-full bg-saffron px-4 py-1.5 text-sm font-medium text-ink shadow-sm hover:bg-saffron-dark"
-        >
-          + Add line ({taal.matras} matras)
-        </button>
+        {isKayda ? (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => addLine("kayda")}
+              className="rounded-full bg-saffron px-4 py-1.5 text-sm font-medium text-ink shadow-sm hover:bg-saffron-dark"
+            >
+              + Main Kayda
+            </button>
+            <button
+              type="button"
+              onClick={() => addLine("prakaar")}
+              className="rounded-full bg-maroon px-4 py-1.5 text-sm font-medium text-parchment shadow-sm hover:bg-maroon-light"
+            >
+              + Prakar
+            </button>
+            <button
+              type="button"
+              onClick={() => addLine("tihai")}
+              className="rounded-full border border-maroon/30 bg-white px-4 py-1.5 text-sm font-medium text-maroon shadow-sm hover:bg-maroon hover:text-parchment"
+            >
+              + Tihai
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => addLine()}
+            className="rounded-full bg-saffron px-4 py-1.5 text-sm font-medium text-ink shadow-sm hover:bg-saffron-dark"
+          >
+            + Add line ({taal.matras} matras)
+          </button>
+        )}
       </div>
+
+      {isKayda && (
+        <div className="mb-4 rounded-lg border border-parchment-dark bg-white/70 p-3 text-sm text-ink/65">
+          <p className="font-medium text-maroon">Kayda layout</p>
+          <p className="mt-1">
+            Start with Main Kayda, add each variation as Prakar 1, Prakar 2, and finish
+            with Tihai. Lines with the same section title display together.
+          </p>
+        </div>
+      )}
 
       {/* Quick-insert bols */}
       <div className="mb-6 rounded-lg border border-dashed border-saffron/40 bg-saffron/5 p-3">
@@ -371,7 +485,7 @@ export function CompositionEditor({
             </p>
             <p className="text-xs text-ink/50">
               {activeMatraCell
-                ? `Selected: Line ${activeCell!.lineIndex + 1}, Matra ${activeCell!.cellIndex + 1}`
+                ? `Selected: ${currentSectionLabel ? `${currentSectionLabel}, ` : ""}Line ${activeCell!.lineIndex + 1}, Matra ${activeCell!.cellIndex + 1}`
                 : "Select a matra cell, then tap a bol."}
             </p>
           </div>
@@ -480,9 +594,46 @@ export function CompositionEditor({
             className="rounded-xl border border-parchment-dark bg-white/80 p-4"
           >
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm font-medium text-maroon">
-                Line {lineIndex + 1}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium text-maroon">
+                  Line {lineIndex + 1}
+                </span>
+                {isKayda && (
+                  <>
+                    <select
+                      value={line.section ?? "other"}
+                      onChange={(e) => {
+                        const section = e.target.value as CompositionLineSection;
+                        updateLineSection(lineIndex, {
+                          section,
+                          sectionTitle:
+                            line.sectionTitle || defaultSectionTitle(section),
+                        });
+                      }}
+                      className="rounded-full border border-parchment-dark bg-parchment px-2 py-1 text-xs text-ink/70"
+                    >
+                      {(Object.keys(
+                        COMPOSITION_LINE_SECTION_LABELS,
+                      ) as CompositionLineSection[]).map((section) => (
+                        <option key={section} value={section}>
+                          {COMPOSITION_LINE_SECTION_LABELS[section]}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      value={line.sectionTitle ?? ""}
+                      onChange={(e) =>
+                        updateLineSection(lineIndex, {
+                          sectionTitle: e.target.value || undefined,
+                        })
+                      }
+                      className="min-w-0 rounded-full border border-parchment-dark bg-white px-3 py-1 text-xs text-ink/70"
+                      placeholder="Section title"
+                    />
+                  </>
+                )}
+              </div>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"

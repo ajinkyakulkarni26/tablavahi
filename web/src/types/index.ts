@@ -10,8 +10,14 @@ export interface MatraCell {
   taaliNumber?: number;
 }
 
+export type CompositionLineSection = "kayda" | "prakaar" | "tihai" | "other";
+
 export interface CompositionLine {
   cells: MatraCell[];
+  /** Optional structural section, useful for Kayda -> Prakar -> Tihai layout */
+  section?: CompositionLineSection;
+  /** Optional visible section name, e.g. Prakar 1 */
+  sectionTitle?: string;
 }
 
 export type CompositionKind =
@@ -65,5 +71,15 @@ export const COMPOSITION_KIND_LABELS: Record<CompositionKind, string> = {
   rela: "Rela",
   tukda: "Tukda",
   chakradar: "Chakradar",
+  other: "Other",
+};
+
+export const COMPOSITION_LINE_SECTION_LABELS: Record<
+  CompositionLineSection,
+  string
+> = {
+  kayda: "Main Kayda",
+  prakaar: "Prakar",
+  tihai: "Tihai",
   other: "Other",
 };

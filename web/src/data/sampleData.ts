@@ -1,15 +1,23 @@
-import type { Composition, CompositionLine } from "../types";
+import type {
+  Composition,
+  CompositionLine,
+  CompositionLineSection,
+} from "../types";
 import { applyTaalMarkers, emptyLine } from "../lib/annotations";
 import { getTaal } from "./taals";
 
 const teentaal = getTaal("teentaal")!;
 
-function line(bols: string[]): CompositionLine {
+function line(
+  bols: string[],
+  section?: CompositionLineSection,
+  sectionTitle?: string,
+): CompositionLine {
   const cells = emptyLine(teentaal.matras).map((cell, i) => ({
     ...cell,
     devanagari: bols[i] ?? "",
   }));
-  return { cells: applyTaalMarkers(cells, teentaal) };
+  return { cells: applyTaalMarkers(cells, teentaal), section, sectionTitle };
 }
 
 const now = new Date().toISOString();
@@ -27,20 +35,20 @@ export const SAMPLE_COMPOSITIONS: Composition[] = [
     lines: [
       line([
         "धा", "धा", "धा", "धा", "धा", "धा", "धा", "न",
-        "तित", "धा", "धा", "धा", "धा", "धा", "धा", "न",
-      ]),
+        "तिट", "धा", "धा", "धा", "धा", "धा", "धा", "न",
+      ], "kayda", "Main Kayda"),
       line([
         "धा", "धिन", "धा", "धा", "धा", "धिन", "धा", "न",
-        "तित", "धा", "धिन", "धा", "धा", "धिन", "धा", "न",
-      ]),
+        "तिट", "धा", "धिन", "धा", "धा", "धिन", "धा", "न",
+      ], "prakaar", "Prakar 1"),
       line([
         "धा", "धा", "त", "क", "त", "धा", "धा", "न",
-        "तित", "धा", "धा", "त", "क", "त", "धा", "न",
-      ]),
+        "तिट", "धा", "धा", "त", "क", "त", "धा", "न",
+      ], "prakaar", "Prakar 2"),
       line([
         "धा", "धा", "धा", "धा", "गे", "ना", "ती", "ना",
         "क", "धा", "धा", "धा", "गे", "ना", "ती", "ना",
-      ]),
+      ], "tihai", "Tihai"),
     ],
     notes: "Sam (×) on matra 1, Taali 2 & 3 on 5 & 13, Khali (०) on 9.",
     createdAt: now,
