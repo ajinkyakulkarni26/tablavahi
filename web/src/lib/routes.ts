@@ -88,7 +88,7 @@ export function buildBrowsePath(
 }
 
 export function buildCompositionPath(composition: Composition): string {
-  return `/${encodeURIComponent(composition.taalId)}/${composition.kind}/${encodeURIComponent(openingBolSlug(composition))}/${encodeURIComponent(composition.id)}`;
+  return `/${encodeURIComponent(composition.taalId)}/${composition.kind}/${encodeURIComponent(openingBolSlug(composition))}`;
 }
 
 export function compositionIdFromSlug(segment: string): string | undefined {
