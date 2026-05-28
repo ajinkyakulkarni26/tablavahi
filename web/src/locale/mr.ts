@@ -11,9 +11,9 @@ export const mr = {
   dedicationSubline: "कृतज्ञतेने समर्पित",
 
   display: "दाखवणे",
-  displayBoth: "दोन्ही",
+  displayBoth: "मराठी / English",
   displayMarathi: "मराठी",
-  displayLatin: "लॅटिन",
+  displayLatin: "English",
 
   /** Script/language label for composition titles (stored in Devanagari) */
   titleMarathi: "शीर्षक (मराठी)",
