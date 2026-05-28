@@ -10,7 +10,6 @@ import { DeveloperContact } from "./components/DeveloperContact";
 import {
   deleteComposition,
   loadCompositions,
-  resetToSamples,
   saveCompositions,
   upsertComposition,
 } from "./lib/storage";
@@ -406,21 +405,6 @@ export default function App() {
           }}
         />
         <DeveloperContact />
-        <button
-          type="button"
-          onClick={() => {
-            if (
-              confirm(
-                "Reset library to sample compositions? Your saved data will be replaced.",
-              )
-            ) {
-              persist(resetToSamples());
-            }
-          }}
-          className="mt-2 text-maroon-light hover:underline"
-        >
-          Reset to samples
-        </button>
       </footer>
     </div>
   );
