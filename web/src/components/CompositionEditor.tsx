@@ -514,6 +514,8 @@ export function CompositionEditor({
         )
         .map((cell) => cell.devanagari),
     );
+    setCellSelection(null);
+    setRangeSelectMode(false);
   };
 
   const pasteClipboardAtActiveCell = () => {
