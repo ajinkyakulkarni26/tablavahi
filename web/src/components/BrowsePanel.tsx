@@ -2,7 +2,6 @@ import type { Composition, CompositionKind } from "../types";
 import { COMPOSITION_KIND_LABELS } from "../types";
 import { TAALS } from "../data/taals";
 import { getTaal } from "../data/taals";
-import { mr } from "../locale/mr";
 
 interface BrowsePanelProps {
   compositions: Composition[];
@@ -41,16 +40,6 @@ export function BrowsePanel({
 
   return (
     <div>
-      <div className="mb-8 text-center">
-        <h1 className="font-devanagari text-4xl font-bold text-ink md:text-5xl">
-          {mr.appTitle}
-        </h1>
-        <p className="font-devanagari mt-2 text-lg text-ink/70">{mr.appSubtitle}</p>
-        <p className="font-devanagari mx-auto mt-3 max-w-lg text-sm leading-relaxed text-ink/55">
-          {mr.appTagline}
-        </p>
-      </div>
-
       <div className="mb-6 flex flex-col gap-3 rounded-xl border border-parchment-dark bg-white/70 p-4 md:flex-row md:items-end">
         <label className="flex-1">
           <span className="text-xs font-medium text-ink/50 uppercase">Taal</span>
