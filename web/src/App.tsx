@@ -28,7 +28,8 @@ import { mr } from "./locale/mr";
 type Screen =
   | { name: "browse" }
   | { name: "view"; id: string }
-  | { name: "edit"; id?: string };
+  | { name: "edit"; id?: string }
+  | { name: "contact" };
 
 type AppHistoryState = {
   tablaVahiScreen: Screen;
@@ -185,7 +186,7 @@ export default function App() {
   }, [syncCompositionsToCloud]);
 
   const activeComposition = useMemo(() => {
-    if (screen.name === "browse") return undefined;
+    if (screen.name !== "view" && screen.name !== "edit") return undefined;
     const id = screen.name === "edit" ? screen.id : screen.id;
     if (!id) return undefined;
     return compositions.find((c) => c.id === id);
@@ -290,6 +291,17 @@ export default function App() {
             >
               {mr.appTitle}
             </button>
+            <button
+              type="button"
+              onClick={() => navigateToScreen({ name: "contact" })}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                screen.name === "contact"
+                  ? "bg-maroon text-parchment"
+                  : "bg-parchment-dark text-ink/70 hover:bg-saffron/30"
+              }`}
+            >
+              Contact
+            </button>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -385,6 +397,21 @@ export default function App() {
               </button>
             </div>
           )}
+
+        {screen.name === "contact" && (
+          <div className="mx-auto max-w-5xl">
+            <DeveloperContact />
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => navigateToScreen(LIBRARY_SCREEN, "replace")}
+                className="rounded-full bg-maroon px-4 py-2 text-sm font-medium text-parchment hover:bg-maroon-light"
+              >
+                Back to Library
+              </button>
+            </div>
+          </div>
+        )}
       </main>
 
       <footer className="border-t border-parchment-dark bg-white/40 px-4 py-4 text-center text-xs text-ink/45">
@@ -404,7 +431,6 @@ export default function App() {
             void handleMigrateNow();
           }}
         />
-        <DeveloperContact />
       </footer>
     </div>
   );
