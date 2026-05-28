@@ -25,51 +25,28 @@ export function CloudSyncPanel({
 }: CloudSyncPanelProps) {
   const googleSignedIn = isGoogleSignedIn(user);
   const accountLabel = !configured
-    ? "—"
+    ? "Cloud off"
     : !user
       ? mr.cloudAccountSignedOut
       : user.isAnonymous
         ? mr.cloudAccountAnonymous
         : (user.email ?? user.uid);
-  const configuredLabel = configured ? mr.cloudYes : mr.cloudNo;
 
   const lastSyncLabel = lastSyncAt
     ? new Date(lastSyncAt).toLocaleString("en-US")
     : mr.cloudLastSyncNever;
+  const compactStatus = configured
+    ? `${accountLabel} · ${status} · Last sync: ${lastSyncLabel}`
+    : `${accountLabel} · ${mr.cloudBuildMissingEnv}`;
 
   return (
-    <section className="mx-auto mb-4 w-full max-w-5xl rounded-xl border border-parchment-dark bg-white/70 p-4 text-left shadow-sm">
-      <h3 className="font-devanagari text-sm font-semibold text-maroon">
-        {mr.cloudPanelTitle}
-      </h3>
-
-      <div className="mt-3 grid gap-3 text-xs text-ink/70 md:grid-cols-3">
-        <p>
-          <span className="font-medium text-ink/90">{mr.cloudConfigured}: </span>
-          {configuredLabel}
-        </p>
-        <p>
-          <span className="font-medium text-ink/90">{mr.cloudAccountLabel}: </span>
-          {accountLabel}
-        </p>
-        <p>
-          <span className="font-medium text-ink/90">{mr.cloudLastSyncLabel}: </span>
-          {lastSyncLabel}
-        </p>
-      </div>
-
-      <p className="font-devanagari mt-2 text-xs text-ink/65">
-        <span className="font-medium text-ink/85">{mr.cloudStatusLabel}: </span>
-        {status}
+    <section className="mx-auto mb-3 flex w-full max-w-5xl flex-col gap-2 rounded-lg border border-parchment-dark bg-white/60 px-3 py-2 text-left shadow-sm md:flex-row md:items-center md:justify-between">
+      <p className="min-w-0 text-xs text-ink/65">
+        <span className="font-medium text-ink/85">Cloud: </span>
+        {compactStatus}
       </p>
 
-      {!configured && (
-        <p className="font-devanagari mt-2 text-xs text-amber-900/80">
-          {mr.cloudBuildMissingEnv}
-        </p>
-      )}
-
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="flex shrink-0 flex-wrap gap-2">
         {googleSignedIn ? (
           <button
             type="button"

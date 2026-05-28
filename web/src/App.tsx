@@ -404,11 +404,6 @@ export default function App() {
             void handleMigrateNow();
           }}
         />
-        {!cloudConfigured && (
-          <p className="mt-1 text-[11px]">
-            Add Firebase env values in `web/.env.local` to enable permanent cloud storage.
-          </p>
-        )}
         <button
           type="button"
           onClick={() => {

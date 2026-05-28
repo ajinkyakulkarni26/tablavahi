@@ -27,19 +27,11 @@ export const mr = {
 
   navCompositions: "नोंदी",
 
-  cloudPanelTitle: "Cloud Account and Sync",
-  cloudConfigured: "Cloud enabled",
-  cloudNotConfigured: "Cloud not configured yet",
-  cloudStatusLabel: "Status",
-  cloudAccountLabel: "Account",
   cloudAccountAnonymous: "Anonymous (guest — sign in with Google to save)",
   cloudAccountSignedOut: "Not signed in",
   cloudBuildMissingEnv:
     "Firebase env vars are missing in this hosted build. Add VITE_FIREBASE_* in GitHub Secrets and redeploy.",
-  cloudLastSyncLabel: "Last sync",
   cloudLastSyncNever: "Not synced yet",
-  cloudYes: "Yes",
-  cloudNo: "No",
   cloudSignInGoogle: "Sign in with Google",
   cloudSignOut: "Sign out",
   cloudSyncNow: "Sync now",
