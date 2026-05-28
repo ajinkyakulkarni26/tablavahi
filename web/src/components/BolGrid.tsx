@@ -77,15 +77,8 @@ export function BolGrid({
                           ${compact ? "min-w-[2.25rem] px-0.5" : "min-w-[2.75rem] px-1"}
                         `}
                       >
-                        <span
-                          className={`
-                            font-devanagari leading-none font-semibold whitespace-nowrap text-maroon
-                            ${marker ? "opacity-100" : "opacity-0"}
-                            ${compact ? "h-5 text-sm" : "h-6 text-base"}
-                          `}
-                          aria-hidden={!marker}
-                        >
-                          {marker || "·"}
+                        <span className="mb-1 text-[11px] text-ink/35 tabular-nums">
+                          {cellIndex + 1}
                         </span>
                         {showDev && (
                           <span
@@ -108,8 +101,15 @@ export function BolGrid({
                             {latin || (cell.devanagari ? "?" : "")}
                           </span>
                         )}
-                        <span className="mt-1 text-[11px] text-ink/35 tabular-nums">
-                          {cellIndex + 1}
+                        <span
+                          className={`
+                            font-devanagari mt-1 leading-none font-semibold whitespace-nowrap text-maroon
+                            ${marker ? "opacity-100" : "opacity-0"}
+                            ${compact ? "h-5 text-sm" : "h-6 text-base"}
+                          `}
+                          aria-hidden={!marker}
+                        >
+                          {marker || "·"}
                         </span>
                       </div>
                     );

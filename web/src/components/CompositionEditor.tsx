@@ -1294,46 +1294,8 @@ export function CompositionEditor({
                             {isFirstCopiedCell ? "Copied" : cellIndex + 1}
                           </span>
                         )}
-                        <select
-                          value={
-                            cell.marker
-                              ? cell.marker === "taali"
-                                ? `taali-${cell.taaliNumber ?? 1}`
-                                : cell.marker
-                              : ""
-                          }
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            if (!v) {
-                              updateCell(lineIndex, cellIndex, {
-                                marker: undefined,
-                                taaliNumber: undefined,
-                              });
-                            } else if (v.startsWith("taali-")) {
-                              updateCell(lineIndex, cellIndex, {
-                                marker: "taali",
-                                taaliNumber: Number(v.split("-")[1]),
-                              });
-                            } else {
-                              updateCell(lineIndex, cellIndex, {
-                                marker: v as BeatMarker,
-                                taaliNumber: undefined,
-                              });
-                            }
-                          }}
-                          className="mb-0.5 rounded border border-parchment-dark bg-parchment px-0.5 py-0.5 text-center text-xs"
-                          title="Beat marker"
-                        >
-                          <option value="">—</option>
-                          <option value="sam">× Sam</option>
-                          <option value="khali">० Khali</option>
-                          <option value="taali-1">1 Taali</option>
-                          <option value="taali-2">2 Taali</option>
-                          <option value="taali-3">3 Taali</option>
-                          <option value="taali-4">4 Taali</option>
-                        </select>
-                        <span className="text-center font-devanagari text-xs text-maroon/80">
-                          {markerSymbol(cell.marker, cell.taaliNumber) || "·"}
+                        <span className="mb-0.5 text-center text-[10px] text-ink/35">
+                          {cellIndex + 1}
                         </span>
                         <input
                           ref={(node) => {
@@ -1418,9 +1380,47 @@ export function CompositionEditor({
                         <span className="truncate text-center text-[11px] text-maroon-light">
                           {transliterateBol(cell.devanagari) || "—"}
                         </span>
-                        <span className="text-center text-[10px] text-ink/35">
-                          {cellIndex + 1}
+                        <span className="mt-0.5 text-center font-devanagari text-xs text-maroon/80">
+                          {markerSymbol(cell.marker, cell.taaliNumber) || "·"}
                         </span>
+                        <select
+                          value={
+                            cell.marker
+                              ? cell.marker === "taali"
+                                ? `taali-${cell.taaliNumber ?? 1}`
+                                : cell.marker
+                              : ""
+                          }
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (!v) {
+                              updateCell(lineIndex, cellIndex, {
+                                marker: undefined,
+                                taaliNumber: undefined,
+                              });
+                            } else if (v.startsWith("taali-")) {
+                              updateCell(lineIndex, cellIndex, {
+                                marker: "taali",
+                                taaliNumber: Number(v.split("-")[1]),
+                              });
+                            } else {
+                              updateCell(lineIndex, cellIndex, {
+                                marker: v as BeatMarker,
+                                taaliNumber: undefined,
+                              });
+                            }
+                          }}
+                          className="mb-0.5 rounded border border-parchment-dark bg-parchment px-0.5 py-0.5 text-center text-xs"
+                          title="Beat marker"
+                        >
+                          <option value="">—</option>
+                          <option value="sam">× Sam</option>
+                          <option value="khali">० Khali</option>
+                          <option value="taali-1">1 Taali</option>
+                          <option value="taali-2">2 Taali</option>
+                          <option value="taali-3">3 Taali</option>
+                          <option value="taali-4">4 Taali</option>
+                        </select>
                       </div>
                     );
                   })}
