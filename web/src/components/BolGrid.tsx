@@ -56,7 +56,7 @@ export function BolGrid({
                   className={`
                     font-devanagari leading-none font-semibold text-maroon
                     ${marker ? "opacity-100" : "opacity-0"}
-                    ${compact ? "h-4 text-xs" : "h-5 text-sm"}
+                    ${compact ? "h-5 text-sm" : "h-6 text-base"}
                   `}
                   aria-hidden={!marker}
                 >
@@ -83,7 +83,7 @@ export function BolGrid({
                     {latin || (cell.devanagari ? "?" : "")}
                   </span>
                 )}
-                <span className="mt-1 text-[9px] text-ink/30 tabular-nums">
+                <span className="mt-1 text-[11px] text-ink/35 tabular-nums">
                   {cellIndex + 1}
                 </span>
               </div>

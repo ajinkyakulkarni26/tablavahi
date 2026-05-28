@@ -295,7 +295,7 @@ export function CompositionEditor({
                         });
                       }
                     }}
-                    className="mb-0.5 rounded border border-parchment-dark bg-parchment px-0.5 py-0.5 text-center text-[10px]"
+                    className="mb-0.5 rounded border border-parchment-dark bg-parchment px-0.5 py-0.5 text-center text-xs"
                     title="Beat marker"
                   >
                     <option value="">—</option>
@@ -305,7 +305,7 @@ export function CompositionEditor({
                     <option value="taali-3">3 Taali</option>
                     <option value="taali-4">4 Taali</option>
                   </select>
-                  <span className="text-center font-devanagari text-[10px] text-maroon/80">
+                  <span className="text-center font-devanagari text-xs text-maroon/80">
                     {markerSymbol(cell.marker, cell.taaliNumber) || "·"}
                   </span>
                   <input
@@ -322,10 +322,10 @@ export function CompositionEditor({
                     inputMode="text"
                     aria-label={`Matra ${cellIndex + 1} bol`}
                   />
-                  <span className="truncate text-center text-[9px] text-maroon-light">
+                  <span className="truncate text-center text-[11px] text-maroon-light">
                     {transliterateBol(cell.devanagari) || "—"}
                   </span>
-                  <span className="text-center text-[8px] text-ink/25">
+                  <span className="text-center text-[10px] text-ink/35">
                     {cellIndex + 1}
                   </span>
                 </div>
