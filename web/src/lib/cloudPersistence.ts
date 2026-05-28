@@ -42,6 +42,14 @@ let app: FirebaseApp | undefined;
 let auth: Auth | undefined;
 let db: Firestore | undefined;
 
+type FirestoreSafeValue =
+  | string
+  | number
+  | boolean
+  | null
+  | FirestoreSafeValue[]
+  | { [key: string]: FirestoreSafeValue };
+
 function hasRequiredConfig(): boolean {
   return (
     Boolean(config.apiKey) &&
@@ -71,6 +79,37 @@ function ensureClient(): { auth: Auth; db: Firestore } {
 
 function compositionsCollection(firestore: Firestore) {
   return collection(firestore, "compositions");
+}
+
+function replaceUndefinedWithNull(value: unknown): FirestoreSafeValue {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => replaceUndefinedWithNull(item));
+  }
+  if (typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [
+        key,
+        replaceUndefinedWithNull(item),
+      ]),
+    );
+  }
+  return null;
+}
+
+function toFirestoreCompositionData(
+  composition: Composition,
+  ownerUid: string,
+  ownerDisplayName: string,
+) {
+  return replaceUndefinedWithNull({
+    ...composition,
+    ownerUid,
+    ownerDisplayName,
+  }) as { [key: string]: FirestoreSafeValue };
 }
 
 export function isCloudConfigured(): boolean {
@@ -150,15 +189,14 @@ export async function saveCompositionsToCloud(
   const tasks = owned.map((composition) =>
     setDoc(
       doc(db, "compositions", composition.id),
-      {
-        ...composition,
-        ownerUid: composition.ownerUid ?? user.uid,
-        ownerDisplayName:
-          composition.ownerDisplayName ??
+      toFirestoreCompositionData(
+        composition,
+        composition.ownerUid ?? user.uid,
+        composition.ownerDisplayName ??
           user.displayName ??
           user.email ??
           "Anonymous",
-      },
+      ),
       { merge: true },
     ),
   );
