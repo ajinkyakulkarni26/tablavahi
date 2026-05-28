@@ -18,6 +18,7 @@ import {
   markerSymbol,
   newLineForTaal,
 } from "../lib/annotations";
+import { parseBulkCompositionText } from "../lib/bulkImport";
 import { COMMON_BOLS, transliterateBol } from "../lib/transliteration";
 import { mr } from "../locale/mr";
 
@@ -70,10 +71,18 @@ export function CompositionEditor({
   );
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
   const [advanceAfterInsert, setAdvanceAfterInsert] = useState(true);
+  const [bulkImportText, setBulkImportText] = useState("");
   const cellInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const taal = useMemo(() => getTaal(taalId), [taalId]);
   const isKayda = kind === "kayda";
+  const bulkImportResult = useMemo(
+    () =>
+      taal
+        ? parseBulkCompositionText(bulkImportText, taal, kind)
+        : { lines: [], tokenCount: 0, unknownBols: [], ignoredLines: [] },
+    [bulkImportText, kind, taal],
+  );
   const activeLine =
     activeCell != null ? lines[activeCell.lineIndex] : undefined;
   const activeMatraCell =
@@ -242,10 +251,27 @@ export function CompositionEditor({
     setLines((prev) => {
       const next = [...prev];
       next[lineIndex] = {
+        ...next[lineIndex],
         cells: applyTaalMarkers(next[lineIndex].cells, taal),
       };
       return next;
     });
+  };
+
+  const applyBulkImport = () => {
+    if (bulkImportResult.lines.length === 0) return;
+    const hasExistingBols = lines.some((line) =>
+      line.cells.some((cell) => cell.devanagari.trim()),
+    );
+    if (
+      hasExistingBols &&
+      !confirm("Replace the current grid with the pasted composition?")
+    ) {
+      return;
+    }
+
+    setLines(bulkImportResult.lines);
+    setActiveCell(null);
   };
 
   const insertBolIntoActiveCell = (bol: string) => {
@@ -475,6 +501,106 @@ export function CompositionEditor({
           </p>
         </div>
       )}
+
+      <div className="mb-6 rounded-xl border border-parchment-dark bg-white/75 p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-xs font-medium tracking-wide text-ink/60 uppercase">
+              Paste full composition
+            </p>
+            <p className="text-xs text-ink/50">
+              Space-separated bols are converted into {taal.matras}-matra grid lines.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={bulkImportResult.lines.length === 0}
+              onClick={applyBulkImport}
+              className="rounded-full bg-maroon px-4 py-1.5 text-xs font-medium text-parchment hover:bg-maroon-light disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              Apply to grid
+            </button>
+            <button
+              type="button"
+              disabled={!bulkImportText.trim()}
+              onClick={() => setBulkImportText("")}
+              className="rounded-full border border-ink/20 bg-white px-3 py-1.5 text-xs text-ink/60 hover:bg-ink/5 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              Clear paste
+            </button>
+          </div>
+        </div>
+
+        <textarea
+          value={bulkImportText}
+          onChange={(e) => setBulkImportText(e.target.value)}
+          rows={7}
+          className="font-devanagari w-full rounded-lg border border-parchment-dark bg-parchment px-3 py-2 text-base leading-8 text-ink focus:border-saffron focus:ring-1 focus:ring-saffron/30 focus:outline-none"
+          placeholder={`Main Kayda\nधा धा धा धा धा धा धा न | तिट धा धा धा धा धा धा न\n\nPrakar 1\nधा धिं धा धा धा धिं धा न | तिट धा धिं धा धा धिं धा न\n\nTihai\nधा धा धा गे ना ती ना`}
+          lang="mr"
+        />
+
+        {bulkImportText.trim() && (
+          <div className="mt-3 space-y-3 text-xs text-ink/60">
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-full bg-parchment-dark px-3 py-1">
+                {bulkImportResult.tokenCount} bols
+              </span>
+              <span className="rounded-full bg-parchment-dark px-3 py-1">
+                {bulkImportResult.lines.length} grid lines
+              </span>
+              <span className="rounded-full bg-parchment-dark px-3 py-1">
+                {taal.matras} matras per line
+              </span>
+            </div>
+
+            {bulkImportResult.unknownBols.length > 0 && (
+              <div className="rounded-lg border border-saffron/40 bg-saffron/10 p-3">
+                <p className="font-medium text-maroon">
+                  New bols not in Quick Insert
+                </p>
+                <p className="font-devanagari mt-1 text-sm text-ink/70">
+                  {bulkImportResult.unknownBols.slice(0, 24).join(" · ")}
+                  {bulkImportResult.unknownBols.length > 24 ? " · ..." : ""}
+                </p>
+              </div>
+            )}
+
+            {bulkImportResult.lines.length > 0 && (
+              <div className="rounded-lg border border-parchment-dark bg-white/70 p-3">
+                <p className="mb-2 font-medium text-ink/70">Import preview</p>
+                <div className="space-y-2">
+                  {bulkImportResult.lines.slice(0, 5).map((line, index) => (
+                    <div
+                      key={`${line.sectionTitle ?? line.section ?? "line"}-${index}`}
+                      className="grid gap-1 md:grid-cols-[7rem_1fr]"
+                    >
+                      <span className="font-medium text-maroon">
+                        {line.sectionTitle ||
+                          (line.section
+                            ? COMPOSITION_LINE_SECTION_LABELS[line.section]
+                            : `Line ${index + 1}`)}
+                      </span>
+                      <span className="font-devanagari text-sm text-ink/75">
+                        {line.cells
+                          .map((cell) => cell.devanagari)
+                          .filter(Boolean)
+                          .join(" ")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {bulkImportResult.lines.length > 5 && (
+                  <p className="mt-2 text-ink/45">
+                    + {bulkImportResult.lines.length - 5} more lines
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Quick-insert bols */}
       <div className="mb-6 rounded-lg border border-dashed border-saffron/40 bg-saffron/5 p-3">
