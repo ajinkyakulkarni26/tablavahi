@@ -21,6 +21,11 @@ import {
 } from "../lib/annotations";
 import { parseBulkCompositionText } from "../lib/bulkImport";
 import { COMMON_BOLS, transliterateBol } from "../lib/transliteration";
+import type { QuickInsertBol } from "../lib/transliteration";
+import {
+  loadUserQuickInsertBols,
+  saveUserQuickInsertBols,
+} from "../lib/storage";
 import { mr } from "../locale/mr";
 
 interface CompositionEditorProps {
@@ -48,6 +53,19 @@ function defaultSectionForKind(kind: CompositionKind): CompositionLineSection {
   return kind === "kayda" ? "kayda" : "other";
 }
 
+function mergeQuickInsertBols(
+  defaults: readonly QuickInsertBol[],
+  userBols: readonly QuickInsertBol[],
+): QuickInsertBol[] {
+  const seen = new Set<string>();
+  return [...defaults, ...userBols].filter((bol) => {
+    const key = bol.devanagari.trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function CompositionEditor({
   initial,
   onSave,
@@ -73,10 +91,17 @@ export function CompositionEditor({
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
   const [advanceAfterInsert, setAdvanceAfterInsert] = useState(true);
   const [bulkImportText, setBulkImportText] = useState("");
+  const [userQuickInsertBols, setUserQuickInsertBols] = useState<
+    QuickInsertBol[]
+  >(loadUserQuickInsertBols);
   const cellInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const taal = useMemo(() => getTaal(taalId), [taalId]);
   const isKayda = kind === "kayda";
+  const quickInsertBols = useMemo(
+    () => mergeQuickInsertBols(COMMON_BOLS, userQuickInsertBols),
+    [userQuickInsertBols],
+  );
   const bulkImportResult = useMemo(
     () =>
       taal
@@ -283,6 +308,25 @@ export function CompositionEditor({
     );
     setActiveCell(null);
     setBulkImportText("");
+  };
+
+  const addMissingBolsToQuickInsert = () => {
+    if (bulkImportResult.unknownBols.length === 0) return;
+    const existing = new Set(quickInsertBols.map((bol) => bol.devanagari));
+    const additions = bulkImportResult.unknownBols
+      .filter((bol) => !existing.has(bol))
+      .map((bol) => ({
+        devanagari: bol,
+        latin: transliterateBol(bol) || bol,
+      }));
+
+    if (additions.length === 0) return;
+
+    setUserQuickInsertBols((prev) => {
+      const next = mergeQuickInsertBols(prev, additions);
+      saveUserQuickInsertBols(next);
+      return next;
+    });
   };
 
   const insertBolIntoActiveCell = (bol: string) => {
@@ -577,9 +621,18 @@ export function CompositionEditor({
 
             {bulkImportResult.unknownBols.length > 0 && (
               <div className="rounded-lg border border-saffron/40 bg-saffron/10 p-3">
-                <p className="font-medium text-maroon">
-                  New bols not in Quick Insert
-                </p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-medium text-maroon">
+                    New bols not in Quick Insert
+                  </p>
+                  <button
+                    type="button"
+                    onClick={addMissingBolsToQuickInsert}
+                    className="rounded-full bg-saffron px-3 py-1 text-xs font-medium text-ink hover:bg-saffron-dark"
+                  >
+                    Add missing bols
+                  </button>
+                </div>
                 <p className="font-devanagari mt-1 text-sm text-ink/70">
                   {bulkImportResult.unknownBols.slice(0, 24).join(" · ")}
                   {bulkImportResult.unknownBols.length > 24 ? " · ..." : ""}
@@ -713,7 +766,7 @@ export function CompositionEditor({
 
         <div className="max-h-36 overflow-y-auto pr-1">
         <div className="flex flex-wrap gap-2">
-        {COMMON_BOLS.map(({ devanagari, latin }) => (
+        {quickInsertBols.map(({ devanagari, latin }) => (
           <button
             key={devanagari}
             type="button"

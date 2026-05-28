@@ -64,6 +64,11 @@ const BOL_MAP: readonly [string, string][] = [
   ["×", "X"],
 ];
 
+export interface QuickInsertBol {
+  devanagari: string;
+  latin: string;
+}
+
 export function transliterateBol(devanagari: string): string {
   const trimmed = devanagari.trim();
   if (!trimmed) return "";
@@ -91,7 +96,7 @@ export function transliterateBol(devanagari: string): string {
   return result;
 }
 
-export const COMMON_BOLS: readonly { devanagari: string; latin: string }[] = [
+export const COMMON_BOLS: readonly QuickInsertBol[] = [
   { devanagari: "धा", latin: "Dha" },
   { devanagari: "धिं", latin: "Dhin" },
   { devanagari: "धी", latin: "Dhi" },

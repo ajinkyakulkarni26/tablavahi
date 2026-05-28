@@ -1,7 +1,9 @@
 import type { Composition } from "../types";
 import { SAMPLE_COMPOSITIONS } from "../data/sampleData";
+import type { QuickInsertBol } from "./transliteration";
 
 const STORAGE_KEY = "tablavahi-compositions";
+const USER_QUICK_INSERT_KEY = "tablavahi-user-quick-insert-bols";
 
 export function loadCompositions(): Composition[] {
   try {
@@ -44,4 +46,26 @@ export function deleteComposition(
 export function resetToSamples(): Composition[] {
   saveCompositions(SAMPLE_COMPOSITIONS);
   return [...SAMPLE_COMPOSITIONS];
+}
+
+export function loadUserQuickInsertBols(): QuickInsertBol[] {
+  try {
+    const raw = localStorage.getItem(USER_QUICK_INSERT_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as QuickInsertBol[];
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter(
+      (bol) =>
+        typeof bol?.devanagari === "string" &&
+        bol.devanagari.trim() &&
+        typeof bol?.latin === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
+export function saveUserQuickInsertBols(bols: QuickInsertBol[]): void {
+  localStorage.setItem(USER_QUICK_INSERT_KEY, JSON.stringify(bols));
 }
