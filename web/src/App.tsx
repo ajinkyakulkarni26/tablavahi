@@ -56,7 +56,7 @@ export default function App() {
   const [compositions, setCompositions] = useState<Composition[]>(loadCompositions);
   const [cloudUser, setCloudUser] = useState<User | null>(null);
   const [screen, setScreen] = useState<Screen>({ name: "browse" });
-  const [selectedTaalId, setSelectedTaalId] = useState("teentaal");
+  const [selectedTaalId, setSelectedTaalId] = useState("all");
   const [selectedKind, setSelectedKind] = useState<CompositionKind | "all">(
     "all",
   );
