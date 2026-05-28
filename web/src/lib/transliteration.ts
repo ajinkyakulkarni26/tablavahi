@@ -3,6 +3,8 @@
  * Longer keys first so compound bols match correctly.
  */
 const BOL_MAP: readonly [string, string][] = [
+  ["तिरकिट", "Tirkit"],
+  ["धागे", "Dha Ge"],
   ["धिं", "Dhin"],
   ["धिन", "Dhin"],
   ["धा", "Dha"],
@@ -20,6 +22,7 @@ const BOL_MAP: readonly [string, string][] = [
   ["ने", "Ne"],
   ["नी", "Ni"],
   ["नम", "Nam"],
+  ["कत्", "Kat"],
   ["क", "Ka"],
   ["कत", "Kat"],
   ["ग", "Ge"],
@@ -74,8 +77,10 @@ export function transliterateBol(devanagari: string): string {
 export const COMMON_BOLS: readonly { devanagari: string; latin: string }[] = [
   { devanagari: "धा", latin: "Dha" },
   { devanagari: "धिं", latin: "Dhin" },
+  { devanagari: "धागे", latin: "Dha Ge" },
   { devanagari: "दा", latin: "Da" },
   { devanagari: "दिन", latin: "Din" },
+  { devanagari: "तिरकिट", latin: "Tirkit" },
   { devanagari: "त", latin: "T" },
   { devanagari: "ता", latin: "Ta" },
   { devanagari: "तिन", latin: "Tin" },
@@ -84,6 +89,7 @@ export const COMMON_BOLS: readonly { devanagari: string; latin: string }[] = [
   { devanagari: "ते", latin: "Te" },
   { devanagari: "न", latin: "Na" },
   { devanagari: "ने", latin: "Ne" },
+  { devanagari: "कत्", latin: "Kat" },
   { devanagari: "क", latin: "Ka" },
   { devanagari: "कत", latin: "Kat" },
   { devanagari: "ग", latin: "Ge" },
