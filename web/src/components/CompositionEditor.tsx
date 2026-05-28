@@ -172,20 +172,10 @@ export function CompositionEditor({
         (compositionCounts.get(bol.devanagari) ?? 0),
     }));
   }, [activeLine, lines, quickInsertBols]);
-  const suggestedQuickInsertBols = useMemo(
-    () =>
-      quickInsertScores
-        .filter((item) => item.score > 0)
-        .sort((a, b) => b.score - a.score || a.index - b.index)
-        .slice(0, 12)
-        .map((item) => item.bol),
-    [quickInsertScores],
-  );
-  const rankedQuickInsertBols = useMemo(
+  const rankedQuickInsertItems = useMemo(
     () =>
       [...quickInsertScores]
-        .sort((a, b) => b.score - a.score || a.index - b.index)
-        .map((item) => item.bol),
+        .sort((a, b) => b.score - a.score || a.index - b.index),
     [quickInsertScores],
   );
   const bulkImportResult = useMemo(
@@ -1104,40 +1094,19 @@ export function CompositionEditor({
           ))}
         </div>
 
-        {suggestedQuickInsertBols.length > 0 && (
-          <div className="mb-2 shrink-0 border-b border-saffron/20 pb-2">
-            <p className="mb-1 text-[11px] font-medium tracking-wide text-ink/45 uppercase">
-              Suggested
-            </p>
-            <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1 lg:max-h-36">
-              {suggestedQuickInsertBols.map(({ devanagari, latin }) => (
-                <button
-                  key={`suggested-${devanagari}`}
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => insertBolIntoActiveCell(devanagari)}
-                  className="rounded-lg border border-saffron/50 bg-white px-3 py-1.5 text-sm text-maroon shadow-sm transition hover:bg-saffron/15"
-                  title={`Insert ${devanagari} into selected cell`}
-                >
-                  <span className="font-devanagari font-semibold">
-                    {devanagari}
-                  </span>{" "}
-                  <span className="text-maroon-light">({latin})</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
         <div className="flex flex-wrap gap-2">
-        {rankedQuickInsertBols.map(({ devanagari, latin }) => (
+        {rankedQuickInsertItems.map(({ bol: { devanagari, latin }, score }) => (
           <button
             key={devanagari}
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => insertBolIntoActiveCell(devanagari)}
-            className="rounded-lg border border-parchment-dark bg-white px-3 py-2 text-sm text-ink/70 shadow-sm transition hover:border-saffron hover:text-maroon"
+            className={`rounded-lg border bg-white px-3 py-2 text-sm shadow-sm transition hover:border-saffron hover:text-maroon ${
+              score > 0
+                ? "border-saffron/50 text-maroon"
+                : "border-parchment-dark text-ink/70"
+            }`}
             title={`Insert ${devanagari} into selected cell`}
           >
             <span className="font-devanagari font-semibold">{devanagari}</span>{" "}
