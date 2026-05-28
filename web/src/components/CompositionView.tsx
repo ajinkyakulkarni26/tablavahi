@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import type { Composition, DisplayMode } from "../types";
 import { COMPOSITION_KIND_LABELS } from "../types";
 import { getTaal } from "../data/taals";
+import { compositionSectionLinks } from "../lib/routes";
 import { BolGrid } from "./BolGrid";
 import { TaalLegend } from "./TaalLegend";
 
@@ -20,6 +22,20 @@ export function CompositionView({
   onBack,
 }: CompositionViewProps) {
   const taal = getTaal(composition.taalId);
+  const sectionLinks = compositionSectionLinks(composition.lines);
+
+  useEffect(() => {
+    const sectionId = window.location.hash.slice(1);
+    if (!sectionId) return;
+
+    window.requestAnimationFrame(() => {
+      document.getElementById(sectionId)?.scrollIntoView({
+        block: "start",
+        behavior: "smooth",
+      });
+    });
+  }, [composition.id]);
+
   if (!taal) {
     return (
       <p className="text-center text-maroon">Unknown taal: {composition.taalId}</p>
@@ -64,6 +80,20 @@ export function CompositionView({
       </header>
 
       <TaalLegend taal={taal} />
+
+      {sectionLinks.length > 1 && (
+        <nav className="mt-4 flex flex-wrap justify-center gap-2 text-xs">
+          {sectionLinks.map((section) => (
+            <a
+              key={section.id}
+              href={`#${section.id}`}
+              className="rounded-full border border-parchment-dark bg-white px-3 py-1 font-medium text-maroon-light hover:border-saffron hover:text-maroon"
+            >
+              {section.label}
+            </a>
+          ))}
+        </nav>
+      )}
 
       <div className="mt-8 rounded-2xl border border-parchment-dark bg-white/80 p-6 shadow-sm md:p-10">
         <BolGrid lines={composition.lines} taal={taal} displayMode={displayMode} />

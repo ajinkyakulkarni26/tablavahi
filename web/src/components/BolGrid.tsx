@@ -1,6 +1,7 @@
 import type { CompositionLine, DisplayMode, Taal } from "../types";
 import { COMPOSITION_LINE_SECTION_LABELS } from "../types";
 import { groupCellsByVibhag, markerSymbol } from "../lib/annotations";
+import { compositionLineSectionAnchors } from "../lib/routes";
 import { transliterateBol } from "../lib/transliteration";
 
 interface BolGridProps {
@@ -19,6 +20,8 @@ export function BolGrid({
   showVibhag = true,
   compact = false,
 }: BolGridProps) {
+  const sectionAnchorIds = compositionLineSectionAnchors(lines);
+
   return (
     <div className="space-y-3">
       {lines.map((line, lineIndex) => {
@@ -37,7 +40,10 @@ export function BolGrid({
         return (
           <div key={lineIndex} className="space-y-1.5">
             {showSectionHeader && (
-              <div className="text-center">
+              <div
+                id={sectionAnchorIds[lineIndex]}
+                className="scroll-mt-24 text-center"
+              >
                 <span className="rounded-full bg-saffron/15 px-3 py-1 text-xs font-semibold tracking-wide text-maroon uppercase">
                   {sectionLabel}
                 </span>

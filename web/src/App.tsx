@@ -7,6 +7,7 @@ import { CompositionView } from "./components/CompositionView";
 import { CompositionEditor } from "./components/CompositionEditor";
 import { CloudSyncPanel } from "./components/CloudSyncPanel";
 import { DeveloperContact } from "./components/DeveloperContact";
+import { getTaal } from "./data/taals";
 import {
   deleteComposition,
   loadCompositions,
@@ -23,6 +24,14 @@ import {
   signOutCloudAccount,
   subscribeCloudUser,
 } from "./lib/cloudPersistence";
+import {
+  buildBrowsePath,
+  buildCompositionPath,
+  compositionIdFromSlug,
+  parseKindSegment,
+  pathSegments,
+  slugifySegment,
+} from "./lib/routes";
 import { mr } from "./locale/mr";
 
 type Screen =
@@ -36,6 +45,72 @@ type AppHistoryState = {
 };
 
 const LIBRARY_SCREEN: Screen = { name: "browse" };
+
+type ParsedAppRoute = {
+  screen: Screen;
+  selectedTaalId: string;
+  selectedKind: CompositionKind | "all";
+  searchQuery: string;
+};
+
+function parseAppRoute(location: Location): ParsedAppRoute {
+  const segments = pathSegments(location.pathname);
+  const params = new URLSearchParams(location.search);
+  const queryKind = parseKindSegment(params.get("kind")) ?? "all";
+  const searchQuery = params.get("q") ?? "";
+
+  if (segments[0] === "contact") {
+    return {
+      screen: { name: "contact" },
+      selectedTaalId: "all",
+      selectedKind: "all",
+      searchQuery,
+    };
+  }
+
+  if (segments[0] === "new") {
+    return {
+      screen: { name: "edit" },
+      selectedTaalId: "all",
+      selectedKind: "all",
+      searchQuery,
+    };
+  }
+
+  const taal = segments[0] ? getTaal(segments[0]) : undefined;
+  if (!taal) {
+    return {
+      screen: LIBRARY_SCREEN,
+      selectedTaalId: "all",
+      selectedKind: queryKind,
+      searchQuery,
+    };
+  }
+
+  const kind = parseKindSegment(segments[1]) ?? "all";
+  const compositionId = segments[2]
+    ? (compositionIdFromSlug(segments[2]) ?? segments[2])
+    : undefined;
+
+  if (compositionId) {
+    return {
+      screen:
+        segments[3] === "edit"
+          ? { name: "edit", id: compositionId }
+          : { name: "view", id: compositionId },
+      selectedTaalId: taal.id,
+      selectedKind: kind,
+      searchQuery,
+    };
+  }
+
+  return {
+    screen: LIBRARY_SCREEN,
+    selectedTaalId: taal.id,
+    selectedKind: kind,
+    searchQuery,
+  };
+}
 
 function formatCloudError(error: unknown): string {
   const message = error instanceof Error ? error.message : "Unknown cloud error";
@@ -53,15 +128,18 @@ function formatCloudError(error: unknown): string {
 }
 
 export default function App() {
+  const initialRoute = useMemo(() => parseAppRoute(window.location), []);
   const cloudConfigured = isCloudConfigured();
   const [compositions, setCompositions] = useState<Composition[]>(loadCompositions);
   const [cloudUser, setCloudUser] = useState<User | null>(null);
-  const [screen, setScreen] = useState<Screen>({ name: "browse" });
-  const [selectedTaalId, setSelectedTaalId] = useState("all");
-  const [selectedKind, setSelectedKind] = useState<CompositionKind | "all">(
-    "all",
+  const [screen, setScreen] = useState<Screen>(initialRoute.screen);
+  const [selectedTaalId, setSelectedTaalId] = useState(
+    initialRoute.selectedTaalId,
   );
-  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedKind, setSelectedKind] = useState<CompositionKind | "all">(
+    initialRoute.selectedKind,
+  );
+  const [searchQuery, setSearchQuery] = useState(initialRoute.searchQuery);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("both");
   const [cloudBusy, setCloudBusy] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
@@ -72,34 +150,42 @@ export default function App() {
   );
 
   const navigateToScreen = useCallback(
-    (next: Screen, mode: "push" | "replace" = "push") => {
+    (
+      next: Screen,
+      mode: "push" | "replace" = "push",
+      url = window.location.pathname + window.location.search + window.location.hash,
+    ) => {
       setScreen(next);
       const state: AppHistoryState = { tablaVahiScreen: next };
       if (mode === "replace") {
-        window.history.replaceState(state, "", window.location.href);
+        window.history.replaceState(state, "", url);
       } else {
-        window.history.pushState(state, "", window.location.href);
+        window.history.pushState(state, "", url);
       }
     },
     [],
   );
 
   useEffect(() => {
+    const applyCurrentRoute = () => {
+      const route = parseAppRoute(window.location);
+      setScreen(route.screen);
+      setSelectedTaalId(route.selectedTaalId);
+      setSelectedKind(route.selectedKind);
+      setSearchQuery(route.searchQuery);
+    };
+
     window.history.replaceState(
-      { tablaVahiScreen: LIBRARY_SCREEN } satisfies AppHistoryState,
+      { tablaVahiScreen: initialRoute.screen } satisfies AppHistoryState,
       "",
       window.location.href,
     );
 
-    const handleBrowserBack = () => {
-      setScreen(LIBRARY_SCREEN);
-    };
-
-    window.addEventListener("popstate", handleBrowserBack);
+    window.addEventListener("popstate", applyCurrentRoute);
     return () => {
-      window.removeEventListener("popstate", handleBrowserBack);
+      window.removeEventListener("popstate", applyCurrentRoute);
     };
-  }, []);
+  }, [initialRoute.screen]);
 
   useEffect(() => {
     if (!cloudConfigured) {
@@ -185,11 +271,41 @@ export default function App() {
     void syncCompositionsToCloud(next);
   }, [syncCompositionsToCloud]);
 
+  const navigateToBrowse = useCallback(
+    (
+      taalId = "all",
+      kind: CompositionKind | "all" = "all",
+      mode: "push" | "replace" = "push",
+    ) => {
+      setSelectedTaalId(taalId);
+      setSelectedKind(kind);
+      navigateToScreen(LIBRARY_SCREEN, mode, buildBrowsePath(taalId, kind));
+    },
+    [navigateToScreen],
+  );
+
+  const handleBrowseTaalChange = useCallback(
+    (taalId: string) => {
+      navigateToBrowse(taalId, selectedKind);
+    },
+    [navigateToBrowse, selectedKind],
+  );
+
+  const handleBrowseKindChange = useCallback(
+    (kind: CompositionKind | "all") => {
+      navigateToBrowse(selectedTaalId, kind);
+    },
+    [navigateToBrowse, selectedTaalId],
+  );
+
   const activeComposition = useMemo(() => {
     if (screen.name !== "view" && screen.name !== "edit") return undefined;
     const id = screen.name === "edit" ? screen.id : screen.id;
     if (!id) return undefined;
-    return compositions.find((c) => c.id === id);
+    return compositions.find((c) => {
+      if (c.id === id) return true;
+      return slugifySegment(c.title || c.titleDevanagari || "composition") === id;
+    });
   }, [screen, compositions]);
 
   const canEditActiveComposition =
@@ -207,7 +323,11 @@ export default function App() {
         undefined,
     };
     persist(upsertComposition(compositions, normalized));
-    navigateToScreen({ name: "view", id: normalized.id }, "replace");
+    navigateToScreen(
+      { name: "view", id: normalized.id },
+      "replace",
+      buildCompositionPath(normalized),
+    );
   };
 
   const handleDelete = async (id: string) => {
@@ -232,7 +352,7 @@ export default function App() {
         setCloudBusy(false);
       }
     }
-    navigateToScreen(LIBRARY_SCREEN, "replace");
+    navigateToBrowse(target?.taalId ?? "all", target?.kind ?? "all", "replace");
   };
 
   const handleMigrateNow = async () => {
@@ -285,7 +405,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => {
-                navigateToScreen(LIBRARY_SCREEN, "replace");
+                navigateToBrowse("all", "all", "replace");
               }}
               className="font-devanagari text-lg font-bold text-maroon hover:opacity-80"
             >
@@ -327,16 +447,24 @@ export default function App() {
               selectedTaalId={selectedTaalId}
               selectedKind={selectedKind}
               searchQuery={searchQuery}
-              onTaalChange={setSelectedTaalId}
-              onKindChange={setSelectedKind}
+              onTaalChange={handleBrowseTaalChange}
+              onKindChange={handleBrowseKindChange}
               onSearchChange={setSearchQuery}
-              onSelect={(c) => navigateToScreen({ name: "view", id: c.id })}
-              onAddNew={() => navigateToScreen({ name: "edit" })}
+              onSelect={(c) =>
+                navigateToScreen(
+                  { name: "view", id: c.id },
+                  "push",
+                  buildCompositionPath(c),
+                )
+              }
+              onAddNew={() => navigateToScreen({ name: "edit" }, "push", "/new")}
             />
             <div className="mx-auto mt-6 max-w-5xl text-center">
               <button
                 type="button"
-                onClick={() => navigateToScreen({ name: "contact" })}
+                onClick={() =>
+                  navigateToScreen({ name: "contact" }, "push", "/contact")
+                }
                 className="text-xs font-medium text-maroon-light hover:text-maroon hover:underline"
               >
                 Developer Contact
@@ -352,33 +480,50 @@ export default function App() {
             canEdit={canEditActiveComposition}
             onEdit={() => {
               if (!canEditActiveComposition) return;
-              navigateToScreen({ name: "edit", id: activeComposition.id });
-            }}
-            onBack={() => navigateToScreen(LIBRARY_SCREEN, "replace")}
-          />
-        )}
-
-        {screen.name === "view" && !activeComposition && (
-          <p className="text-center text-ink/50">Composition not found.</p>
-        )}
-
-        {screen.name === "edit" && (
-          <CompositionEditor
-            initial={
-              screen.id
-                ? compositions.find((c) => c.id === screen.id)
-                : undefined
-            }
-            onSave={handleSave}
-            onCancel={() =>
               navigateToScreen(
-                screen.id
-                  ? { name: "view", id: screen.id }
-                  : { name: "browse" },
+                { name: "edit", id: activeComposition.id },
+                "push",
+                `${buildCompositionPath(activeComposition)}/edit`,
+              );
+            }}
+            onBack={() =>
+              navigateToBrowse(
+                activeComposition.taalId,
+                activeComposition.kind,
                 "replace",
               )
             }
           />
+        )}
+
+        {screen.name === "view" && !activeComposition && (
+          <p className="text-center text-ink/50">
+            {cloudBusy ? "Loading composition..." : "Composition not found."}
+          </p>
+        )}
+
+        {screen.name === "edit" && (!screen.id || activeComposition) && (
+          <CompositionEditor
+            initial={screen.id ? activeComposition : undefined}
+            onSave={handleSave}
+            onCancel={() => {
+              if (screen.id && activeComposition) {
+                navigateToScreen(
+                  { name: "view", id: activeComposition.id },
+                  "replace",
+                  buildCompositionPath(activeComposition),
+                );
+                return;
+              }
+              navigateToBrowse("all", "all", "replace");
+            }}
+          />
+        )}
+
+        {screen.name === "edit" && screen.id && !activeComposition && (
+          <p className="text-center text-ink/50">
+            {cloudBusy ? "Loading composition..." : "Composition not found."}
+          </p>
         )}
 
         {screen.name === "edit" &&
@@ -389,7 +534,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => {
-                  void handleDelete(screen.id!);
+                  void handleDelete(activeComposition.id);
                 }}
                 className="text-xs text-red-700/60 hover:underline"
               >
@@ -404,7 +549,7 @@ export default function App() {
             <div className="mt-4 text-center">
               <button
                 type="button"
-                onClick={() => navigateToScreen(LIBRARY_SCREEN, "replace")}
+                onClick={() => navigateToBrowse("all", "all", "replace")}
                 className="rounded-full bg-maroon px-4 py-2 text-sm font-medium text-parchment hover:bg-maroon-light"
               >
                 Back to Library
