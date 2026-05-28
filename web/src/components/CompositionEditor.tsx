@@ -370,10 +370,11 @@ export function CompositionEditor({
     setBulkImportText("");
   };
 
-  const addMissingBolsToQuickInsert = () => {
-    if (unknownQuickInsertBols.length === 0) return;
+  const learnBolsForQuickInsert = (bolValues: string[]) => {
     const existing = new Set(quickInsertBols.map((bol) => bol.devanagari));
-    const additions = unknownQuickInsertBols
+    const additions = bolValues
+      .map((bol) => bol.trim())
+      .filter(Boolean)
       .filter((bol) => !existing.has(bol))
       .map((bol) => ({
         devanagari: bol,
@@ -382,11 +383,14 @@ export function CompositionEditor({
 
     if (additions.length === 0) return;
 
-    setUserQuickInsertBols((prev) => {
-      const next = mergeQuickInsertBols(prev, additions);
-      saveUserQuickInsertBols(next);
-      return next;
-    });
+    const nextUserBols = mergeQuickInsertBols(userQuickInsertBols, additions);
+    saveUserQuickInsertBols(nextUserBols);
+    setUserQuickInsertBols(nextUserBols);
+  };
+
+  const addMissingBolsToQuickInsert = () => {
+    if (unknownQuickInsertBols.length === 0) return;
+    learnBolsForQuickInsert(unknownQuickInsertBols);
   };
 
   const insertBolIntoActiveCell = (bol: string) => {
@@ -480,6 +484,11 @@ export function CompositionEditor({
       createdAt: initial?.createdAt ?? now,
       updatedAt: now,
     };
+    learnBolsForQuickInsert(
+      lines.flatMap((line) =>
+        line.cells.flatMap((cell) => cell.devanagari.trim().split(/\s+/)),
+      ),
+    );
     onSave(composition);
   };
 
