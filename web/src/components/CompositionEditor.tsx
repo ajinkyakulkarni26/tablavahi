@@ -47,6 +47,12 @@ type CellSelection = {
   focusCellIndex: number;
 };
 
+type CellRange = {
+  lineIndex: number;
+  startCellIndex: number;
+  endCellIndex: number;
+};
+
 const PRAKAAR_REPEAT_CELL_INDICES = new Set([3, 4, 5, 6, 12, 13, 14, 15]);
 
 function createId(): string {
@@ -61,11 +67,7 @@ function defaultSectionForKind(kind: CompositionKind): CompositionLineSection {
   return kind === "kayda" ? "kayda" : "other";
 }
 
-function normalizedSelection(selection: CellSelection): {
-  lineIndex: number;
-  startCellIndex: number;
-  endCellIndex: number;
-} {
+function normalizedSelection(selection: CellSelection): CellRange {
   return {
     lineIndex: selection.lineIndex,
     startCellIndex: Math.min(
@@ -114,6 +116,9 @@ export function CompositionEditor({
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
   const [cellSelection, setCellSelection] = useState<CellSelection | null>(null);
   const [cellClipboard, setCellClipboard] = useState<string[]>([]);
+  const [copiedCellRange, setCopiedCellRange] = useState<CellRange | null>(
+    null,
+  );
   const [advanceAfterInsert, setAdvanceAfterInsert] = useState(true);
   const [rangeSelectMode, setRangeSelectMode] = useState(false);
   const [bulkImportText, setBulkImportText] = useState("");
@@ -199,6 +204,9 @@ export function CompositionEditor({
     : null;
   const selectedCellCount = selectedCellRange
     ? selectedCellRange.endCellIndex - selectedCellRange.startCellIndex + 1
+    : 0;
+  const copiedCellCount = copiedCellRange
+    ? copiedCellRange.endCellIndex - copiedCellRange.startCellIndex + 1
     : 0;
 
   const rememberActiveCell = (
@@ -287,6 +295,16 @@ export function CompositionEditor({
     return (
       cellIndex >= selectedCellRange.startCellIndex &&
       cellIndex <= selectedCellRange.endCellIndex
+    );
+  };
+
+  const isCellCopied = (lineIndex: number, cellIndex: number): boolean => {
+    if (!copiedCellRange || copiedCellRange.lineIndex !== lineIndex) {
+      return false;
+    }
+    return (
+      cellIndex >= copiedCellRange.startCellIndex &&
+      cellIndex <= copiedCellRange.endCellIndex
     );
   };
 
@@ -514,6 +532,7 @@ export function CompositionEditor({
         )
         .map((cell) => cell.devanagari),
     );
+    setCopiedCellRange({ ...selectedCellRange });
     setCellSelection(null);
     setRangeSelectMode(false);
   };
@@ -947,6 +966,13 @@ export function CompositionEditor({
                 Range select is on. Tap another cell in the same line.
               </p>
             )}
+            {copiedCellRange && !rangeSelectMode && (
+              <p className="mt-1 text-xs font-medium text-ink/55">
+                Copied {copiedCellCount}{" "}
+                {copiedCellCount === 1 ? "cell" : "cells"}. Tap a destination,
+                then paste.
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -1237,6 +1263,10 @@ export function CompositionEditor({
                       lineIndex,
                       cellIndex,
                     );
+                    const copiedSource = isCellCopied(lineIndex, cellIndex);
+                    const isFirstCopiedCell =
+                      copiedCellRange?.lineIndex === lineIndex &&
+                      copiedCellRange.startCellIndex === cellIndex;
                     const activeForEdit =
                       activeCell?.lineIndex === lineIndex &&
                       activeCell?.cellIndex === cellIndex;
@@ -1247,6 +1277,8 @@ export function CompositionEditor({
                         className={`relative flex w-[4.5rem] shrink-0 flex-col items-stretch rounded-lg p-1 transition ${
                           selectedForCopy
                             ? "bg-saffron/20 ring-2 ring-maroon/45 shadow-sm"
+                            : copiedSource
+                              ? "bg-ink/5 ring-1 ring-ink/20"
                             : activeForEdit
                               ? "bg-white ring-1 ring-saffron/35"
                               : "bg-transparent"
@@ -1255,6 +1287,11 @@ export function CompositionEditor({
                         {selectedForCopy && (
                           <span className="pointer-events-none absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-maroon px-1 text-[10px] font-semibold text-parchment shadow-sm">
                             {cellIndex + 1}
+                          </span>
+                        )}
+                        {copiedSource && !selectedForCopy && (
+                          <span className="pointer-events-none absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full border border-ink/15 bg-white px-1 text-[10px] font-semibold text-ink/55 shadow-sm">
+                            {isFirstCopiedCell ? "Copied" : cellIndex + 1}
                           </span>
                         )}
                         <select
@@ -1367,6 +1404,8 @@ export function CompositionEditor({
                           className={`font-devanagari rounded border bg-white px-1 py-1.5 text-center text-lg font-semibold focus:border-saffron focus:ring-1 focus:ring-saffron/30 focus:outline-none ${
                             selectedForCopy
                               ? "border-maroon bg-saffron/10 ring-2 ring-saffron/40"
+                              : copiedSource
+                                ? "border-ink/20 bg-ink/[0.03]"
                               : activeForEdit
                               ? "border-saffron ring-1 ring-saffron/30"
                               : "border-parchment-dark"
