@@ -422,6 +422,7 @@ export function CompositionEditor({
             ["", "No marker"],
             ["sam", "× Sam"],
             ["khali", "० Khali"],
+            ["taali-1", "1 Taali"],
             ["taali-2", "2 Taali"],
             ["taali-3", "3 Taali"],
             ["taali-4", "4 Taali"],
@@ -519,7 +520,7 @@ export function CompositionEditor({
                     value={
                       cell.marker
                         ? cell.marker === "taali"
-                          ? `taali-${cell.taaliNumber ?? 2}`
+                          ? `taali-${cell.taaliNumber ?? 1}`
                           : cell.marker
                         : ""
                     }
@@ -548,6 +549,7 @@ export function CompositionEditor({
                     <option value="">—</option>
                     <option value="sam">× Sam</option>
                     <option value="khali">० Khali</option>
+                    <option value="taali-1">1 Taali</option>
                     <option value="taali-2">2 Taali</option>
                     <option value="taali-3">3 Taali</option>
                     <option value="taali-4">4 Taali</option>

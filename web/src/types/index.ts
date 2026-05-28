@@ -1,4 +1,4 @@
-/** Sam (X), Khali (0), Taali (2, 3, 4 …) markers above matras */
+/** Sam (X), Khali (0), Taali (1, 2, 3 …) markers above matras */
 export type BeatMarker = "sam" | "khali" | "taali";
 
 export interface MatraCell {
@@ -6,7 +6,7 @@ export interface MatraCell {
   devanagari: string;
   /** Optional beat marker shown above this matra */
   marker?: BeatMarker;
-  /** For taali: which clap number (2, 3, 4 …) */
+  /** For taali: which clap number (1, 2, 3 …) */
   taaliNumber?: number;
 }
 

@@ -8,7 +8,7 @@ export function TaalLegend({ taal }: { taal: Taal }) {
       </span>
       {taal.taaliMatras.length > 0 && (
         <span>
-          <strong className="text-maroon">2, 3…</strong> Taali (
+          <strong className="text-maroon">1, 2, 3…</strong> Taali (
           {taal.taaliMatras.join(", ")})
         </span>
       )}

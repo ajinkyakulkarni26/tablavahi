@@ -12,7 +12,7 @@ export function markerSymbol(
     case "khali":
       return "०";
     case "taali":
-      return taaliNumber != null ? String(taaliNumber) : "२";
+      return taaliNumber != null ? String(taaliNumber) : "1";
     default:
       return "";
   }
