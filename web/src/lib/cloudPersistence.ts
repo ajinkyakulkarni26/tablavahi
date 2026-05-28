@@ -29,24 +29,9 @@ type FirebaseConfig = {
   appId: string;
 };
 
-function resolveAuthDomain(): string {
-  const configuredAuthDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? "";
-  if (typeof window === "undefined") return configuredAuthDomain;
-
-  const { hostname, protocol } = window.location;
-  if (
-    protocol === "https:" &&
-    (hostname.endsWith(".web.app") || hostname.endsWith(".firebaseapp.com"))
-  ) {
-    return hostname;
-  }
-
-  return configuredAuthDomain;
-}
-
 const config: FirebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? "",
-  authDomain: resolveAuthDomain(),
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? "",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ?? "",
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "",
