@@ -259,20 +259,30 @@ export function CompositionEditor({
     });
   };
 
-  const applyBulkImport = () => {
-    if (bulkImportResult.lines.length === 0) return;
-    const hasExistingBols = lines.some((line) =>
+  const hasExistingGridBols = () =>
+    lines.some((line) =>
       line.cells.some((cell) => cell.devanagari.trim()),
     );
+
+  const applyBulkImport = (mode: "append" | "replace") => {
+    if (bulkImportResult.lines.length === 0) return;
+    const hasExistingBols = hasExistingGridBols();
+
     if (
+      mode === "replace" &&
       hasExistingBols &&
       !confirm("Replace the current grid with the pasted composition?")
     ) {
       return;
     }
 
-    setLines(bulkImportResult.lines);
+    setLines((prev) =>
+      mode === "append" && hasExistingBols
+        ? [...prev, ...bulkImportResult.lines]
+        : bulkImportResult.lines,
+    );
     setActiveCell(null);
+    setBulkImportText("");
   };
 
   const insertBolIntoActiveCell = (bol: string) => {
@@ -511,16 +521,25 @@ export function CompositionEditor({
             </p>
             <p className="text-xs text-ink/50">
               Space-separated bols are converted into {taal.matras}-matra grid lines.
+              Use append when adding one Prakar or Tihai to existing work.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               disabled={bulkImportResult.lines.length === 0}
-              onClick={applyBulkImport}
+              onClick={() => applyBulkImport("append")}
               className="rounded-full bg-maroon px-4 py-1.5 text-xs font-medium text-parchment hover:bg-maroon-light disabled:cursor-not-allowed disabled:opacity-45"
             >
-              Apply to grid
+              Append to grid
+            </button>
+            <button
+              type="button"
+              disabled={bulkImportResult.lines.length === 0}
+              onClick={() => applyBulkImport("replace")}
+              className="rounded-full border border-maroon/30 bg-white px-3 py-1.5 text-xs font-medium text-maroon hover:bg-maroon hover:text-parchment disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              Replace grid
             </button>
             <button
               type="button"
