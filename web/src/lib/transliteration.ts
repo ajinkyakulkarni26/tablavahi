@@ -3,6 +3,7 @@
  * Longer keys first so compound bols match correctly.
  */
 const BOL_MAP: readonly [string, string][] = [
+  ["धिं", "Dhin"],
   ["धिन", "Dhin"],
   ["धा", "Dha"],
   ["दा", "Da"],
@@ -72,7 +73,7 @@ export function transliterateBol(devanagari: string): string {
 
 export const COMMON_BOLS: readonly { devanagari: string; latin: string }[] = [
   { devanagari: "धा", latin: "Dha" },
-  { devanagari: "धिन", latin: "Dhin" },
+  { devanagari: "धिं", latin: "Dhin" },
   { devanagari: "दा", latin: "Da" },
   { devanagari: "दिन", latin: "Din" },
   { devanagari: "त", latin: "T" },
