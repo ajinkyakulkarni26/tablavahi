@@ -44,6 +44,16 @@ let app: FirebaseApp | undefined;
 let auth: Auth | undefined;
 let db: Firestore | undefined;
 
+export type GoogleSignInMethod = "popup" | "redirect";
+
+const redirectFallbackAuthCodes = new Set([
+  "auth/cancelled-popup-request",
+  "auth/operation-not-supported-in-this-environment",
+  "auth/popup-blocked",
+  "auth/popup-closed-by-user",
+  "auth/web-storage-unsupported",
+]);
+
 function hasRequiredConfig(): boolean {
   return (
     Boolean(config.apiKey) &&
@@ -94,17 +104,25 @@ export function isGoogleSignedIn(user: User | null): boolean {
   return Boolean(user && !user.isAnonymous);
 }
 
-export async function signInWithGoogleAccount(): Promise<void> {
+function shouldUseRedirectFallback(error: unknown): boolean {
+  const code = (error as AuthError).code;
+  return redirectFallbackAuthCodes.has(code);
+}
+
+export async function signInWithGoogleAccount(): Promise<GoogleSignInMethod> {
   const { auth } = ensureClient();
   const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+
   try {
     await signInWithPopup(auth, provider);
+    return "popup";
   } catch (error) {
-    const code = (error as AuthError).code;
-    // Popup often fails on mobile/in-app browsers; redirect is more reliable.
-    if (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request") {
+    // Some browsers close Firebase OAuth popups before the parent window receives
+    // the result. Redirect sign-in is slower but survives those environments.
+    if (shouldUseRedirectFallback(error)) {
       await signInWithRedirect(auth, provider);
-      return;
+      return "redirect";
     }
     throw error;
   }
@@ -180,4 +198,3 @@ export async function deleteCompositionFromCloud(id: string): Promise<void> {
   await requireGoogleUser();
   await deleteDoc(doc(db, "compositions", id));
 }
-

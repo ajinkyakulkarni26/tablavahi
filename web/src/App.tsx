@@ -229,8 +229,12 @@ export default function App() {
   const handleCloudSignIn = async () => {
     try {
       setCloudBusy(true);
-      await signInWithGoogleAccount();
-      setCloudStatus("Google sign-in successful.");
+      const method = await signInWithGoogleAccount();
+      setCloudStatus(
+        method === "redirect"
+          ? "Redirecting to Google sign-in..."
+          : "Google sign-in successful.",
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown cloud error";
       setCloudStatus(`Google sign-in failed: ${message}`);
