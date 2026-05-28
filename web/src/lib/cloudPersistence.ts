@@ -4,7 +4,6 @@ import {
   GoogleAuthProvider,
   onAuthStateChanged,
   getAuth,
-  signInAnonymously,
   signInWithRedirect,
   signInWithPopup,
   signOut,
@@ -72,13 +71,6 @@ function ensureClient(): { auth: Auth; db: Firestore } {
   return { auth, db };
 }
 
-async function ensureSignedInUser(): Promise<User> {
-  const { auth } = ensureClient();
-  if (auth.currentUser) return auth.currentUser;
-  const cred = await signInAnonymously(auth);
-  return cred.user;
-}
-
 function compositionsCollection(firestore: Firestore) {
   return collection(firestore, "compositions");
 }
@@ -90,8 +82,16 @@ export function isCloudConfigured(): boolean {
 export function subscribeCloudUser(
   onChange: (user: User | null) => void,
 ): () => void {
+  if (!hasRequiredConfig()) {
+    onChange(null);
+    return () => {};
+  }
   const { auth } = ensureClient();
   return onAuthStateChanged(auth, onChange);
+}
+
+export function isGoogleSignedIn(user: User | null): boolean {
+  return Boolean(user && !user.isAnonymous);
 }
 
 export async function signInWithGoogleAccount(): Promise<void> {
@@ -122,7 +122,7 @@ export async function finalizeGoogleRedirectSignIn(): Promise<void> {
 
 export async function loadCompositionsFromCloud(): Promise<Composition[]> {
   const { db } = ensureClient();
-  await ensureSignedInUser();
+  // Firestore rules allow public read on /compositions — no sign-in required to browse.
   const snap = await getDocs(compositionsCollection(db));
 
   const results: Composition[] = [];
@@ -138,11 +138,22 @@ export async function loadCompositionsFromCloud(): Promise<Composition[]> {
   return results;
 }
 
+async function requireGoogleUser(): Promise<User> {
+  const { auth } = ensureClient();
+  const user = auth.currentUser;
+  if (!user || user.isAnonymous) {
+    throw new Error(
+      "Please sign in with Google before saving compositions to the shared library.",
+    );
+  }
+  return user;
+}
+
 export async function saveCompositionsToCloud(
   compositions: Composition[],
 ): Promise<void> {
   const { db } = ensureClient();
-  const user = await ensureSignedInUser();
+  const user = await requireGoogleUser();
   const owned = compositions.filter(
     (composition) => !composition.ownerUid || composition.ownerUid === user.uid,
   );
@@ -166,7 +177,7 @@ export async function saveCompositionsToCloud(
 
 export async function deleteCompositionFromCloud(id: string): Promise<void> {
   const { db } = ensureClient();
-  await ensureSignedInUser();
+  await requireGoogleUser();
   await deleteDoc(doc(db, "compositions", id));
 }
 

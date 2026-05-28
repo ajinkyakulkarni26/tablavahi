@@ -31,8 +31,7 @@ To keep data beyond one browser and prepare for Android, enable Firebase:
 
 1) Create a Firebase project
 - Enable **Firestore Database**
-- Enable **Authentication -> Anonymous**
-- Enable **Authentication -> Google** (for account-based login)
+- Enable **Authentication -> Google** (required to save your own compositions to the shared library)
 
 2) Add web environment values in `web/.env.local`:
 
@@ -45,7 +44,9 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
 ```
 
-3) Restart app:
+3) For **GitHub deploy** (`tablavahi.web.app`), add the same six `VITE_FIREBASE_*` values as repository **Secrets** (Settings → Secrets and variables → Actions). The deploy workflow passes them into `npm run build`.
+
+4) Restart app:
 
 ```bash
 cd web
@@ -53,12 +54,9 @@ npm install
 npm run dev
 ```
 
-4) In the app footer, click **"Migrate / sync all compositions to cloud"** once.
+5) In the app footer, use **Google ने साइन-इन करा**, then **Sync now** to upload compositions.
 
-After this:
-- Compositions are written to Firestore
-
-You can optionally use **Sign in with Google** in the footer so your data is tied to a real account, making Android migration easier.
+After this, compositions are written to Firestore under your Google account.
 
 ## Legacy Java module
 

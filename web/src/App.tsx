@@ -65,7 +65,10 @@ export default function App() {
   }, [activeDesignId]);
 
   useEffect(() => {
-    if (!cloudConfigured) return;
+    if (!cloudConfigured) {
+      setCloudUser(null);
+      return;
+    }
     void finalizeGoogleRedirectSignIn().catch((error) => {
       const message =
         error instanceof Error ? error.message : "Unknown cloud error";

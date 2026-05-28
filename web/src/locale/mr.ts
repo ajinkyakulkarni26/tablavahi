@@ -41,11 +41,14 @@ export const mr = {
   cloudNotConfigured: "क्लाऊड अजून सेट केलेले नाही",
   cloudStatusLabel: "स्थिती",
   cloudAccountLabel: "खाते",
-  cloudAccountAnonymous: "अनामिक (Anonymous)",
+  cloudAccountAnonymous: "अनामिक (guest — sign in with Google to save)",
+  cloudAccountSignedOut: "Not signed in",
+  cloudBuildMissingEnv:
+    "या होस्टेड आवृत्तीत Firebase env नाही. GitHub Secrets मध्ये VITE_FIREBASE_* जोडा आणि पुन्हा deploy करा.",
   cloudLastSyncLabel: "शेवटचे समक्रमण",
   cloudLastSyncNever: "अजून झालेले नाही",
-  cloudSignInGoogle: "Google ने साइन-इन करा",
-  cloudSignOut: "साइन-आउट",
+  cloudSignInGoogle: "Sign in with Google",
+  cloudSignOut: "Sign out",
   cloudSyncNow: "आता सर्व डेटा समक्रमित करा",
   cloudSyncing: "समक्रमण सुरू आहे...",
 } as const;

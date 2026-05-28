@@ -1,4 +1,5 @@
 import type { User } from "firebase/auth";
+import { isGoogleSignedIn } from "../lib/cloudPersistence";
 import { mr } from "../locale/mr";
 
 interface CloudSyncPanelProps {
@@ -22,9 +23,11 @@ export function CloudSyncPanel({
   onSignOut,
   onSyncNow,
 }: CloudSyncPanelProps) {
-  const accountLabel =
-    !configured || !user
-      ? "—"
+  const googleSignedIn = isGoogleSignedIn(user);
+  const accountLabel = !configured
+    ? "—"
+    : !user
+      ? mr.cloudAccountSignedOut
       : user.isAnonymous
         ? mr.cloudAccountAnonymous
         : (user.email ?? user.uid);
@@ -60,28 +63,34 @@ export function CloudSyncPanel({
         {status}
       </p>
 
-      {configured && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {!user || user.isAnonymous ? (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={onSignIn}
-              className="rounded-full border border-maroon/30 bg-white px-3 py-1 text-[11px] text-maroon hover:bg-maroon hover:text-parchment disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {mr.cloudSignInGoogle}
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={onSignOut}
-              className="rounded-full border border-ink/20 bg-white px-3 py-1 text-[11px] text-ink/70 hover:bg-ink/5 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {mr.cloudSignOut}
-            </button>
-          )}
+      {!configured && (
+        <p className="font-devanagari mt-2 text-xs text-amber-900/80">
+          {mr.cloudBuildMissingEnv}
+        </p>
+      )}
 
+      <div className="mt-3 flex flex-wrap gap-2">
+        {googleSignedIn ? (
+          <button
+            type="button"
+            disabled={busy || !configured}
+            onClick={onSignOut}
+            className="rounded-full border border-ink/20 bg-white px-3 py-1 text-[11px] text-ink/70 hover:bg-ink/5 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {mr.cloudSignOut}
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled={busy || !configured}
+            onClick={onSignIn}
+            className="rounded-full border border-maroon/30 bg-white px-3 py-1 text-[11px] font-medium text-maroon hover:bg-maroon hover:text-parchment disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {mr.cloudSignInGoogle}
+          </button>
+        )}
+
+        {configured && (
           <button
             type="button"
             disabled={busy}
@@ -90,9 +99,8 @@ export function CloudSyncPanel({
           >
             {busy ? mr.cloudSyncing : mr.cloudSyncNow}
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
-
