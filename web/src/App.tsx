@@ -291,17 +291,6 @@ export default function App() {
             >
               {mr.appTitle}
             </button>
-            <button
-              type="button"
-              onClick={() => navigateToScreen({ name: "contact" })}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                screen.name === "contact"
-                  ? "bg-maroon text-parchment"
-                  : "bg-parchment-dark text-ink/70 hover:bg-saffron/30"
-              }`}
-            >
-              Contact
-            </button>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -332,17 +321,28 @@ export default function App() {
 
       <main className="flex-1 px-4 py-8">
         {screen.name === "browse" && (
-          <BrowsePanel
-            compositions={compositions}
-            selectedTaalId={selectedTaalId}
-            selectedKind={selectedKind}
-            searchQuery={searchQuery}
-            onTaalChange={setSelectedTaalId}
-            onKindChange={setSelectedKind}
-            onSearchChange={setSearchQuery}
-            onSelect={(c) => navigateToScreen({ name: "view", id: c.id })}
-            onAddNew={() => navigateToScreen({ name: "edit" })}
-          />
+          <>
+            <BrowsePanel
+              compositions={compositions}
+              selectedTaalId={selectedTaalId}
+              selectedKind={selectedKind}
+              searchQuery={searchQuery}
+              onTaalChange={setSelectedTaalId}
+              onKindChange={setSelectedKind}
+              onSearchChange={setSearchQuery}
+              onSelect={(c) => navigateToScreen({ name: "view", id: c.id })}
+              onAddNew={() => navigateToScreen({ name: "edit" })}
+            />
+            <div className="mx-auto mt-6 max-w-5xl text-center">
+              <button
+                type="button"
+                onClick={() => navigateToScreen({ name: "contact" })}
+                className="text-xs font-medium text-maroon-light hover:text-maroon hover:underline"
+              >
+                Developer Contact
+              </button>
+            </div>
+          </>
         )}
 
         {screen.name === "view" && activeComposition && (
