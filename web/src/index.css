@@ -25,9 +25,7 @@ body {
   font-family: var(--font-devanagari);
 }
 
-/* Tabla design themes — set via data-design on <html> */
-html,
-html[data-design="classic"] {
+html {
   --tv-saffron: #e8a838;
   --tv-saffron-dark: #c4841f;
   --tv-ink: #1a1410;
@@ -35,34 +33,4 @@ html[data-design="classic"] {
   --tv-parchment-dark: #f0e8d8;
   --tv-maroon: #6b2d2d;
   --tv-maroon-light: #8f4545;
-}
-
-html[data-design="warm-guru"] {
-  --tv-saffron: #d4922a;
-  --tv-saffron-dark: #a86f18;
-  --tv-ink: #2a1810;
-  --tv-parchment: #f5ebe0;
-  --tv-parchment-dark: #e8d4bc;
-  --tv-maroon: #7a3535;
-  --tv-maroon-light: #9e4a4a;
-}
-
-html[data-design="ink-contrast"] {
-  --tv-saffron: #b8860b;
-  --tv-saffron-dark: #8b6508;
-  --tv-ink: #0d0d0d;
-  --tv-parchment: #f7f7f5;
-  --tv-parchment-dark: #e8e8e4;
-  --tv-maroon: #4a2020;
-  --tv-maroon-light: #6b3030;
-}
-
-html[data-design="minimal"] {
-  --tv-saffron: #c9a227;
-  --tv-saffron-dark: #9a7b1a;
-  --tv-ink: #222222;
-  --tv-parchment: #ffffff;
-  --tv-parchment-dark: #f0f0ee;
-  --tv-maroon: #555555;
-  --tv-maroon-light: #777777;
 }

@@ -28,13 +28,6 @@ export const mr = {
   guruNotePlaceholder: "उदा. गुरूजींकडून २०२० मध्ये शिकलेले…",
 
   navCompositions: "नोंदी",
-  navDesigns: "डिझाइन",
-
-  designsTitle: "तबला डिझाइन",
-  designsIntroNoImages:
-    "वहीची रंगरंगी निवडा. चित्रे काढून टाकली आहेत; आता लक्ष फक्त ताल-रचना आणि बोलांवर आहे.",
-  tabDesigns: "डिझाइन",
-  activeDesign: "सक्रिय",
 
   cloudPanelTitle: "Cloud Account and Sync",
   cloudConfigured: "Cloud enabled",

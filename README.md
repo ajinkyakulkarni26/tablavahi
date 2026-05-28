@@ -20,7 +20,6 @@ Open the URL shown (usually http://localhost:5173).
 - **View** compositions with vibhag dividers and beat annotations
 - **Add / edit** compositions on a matra grid with Marathi input and live transliteration
 - **Display modes**: Marathi only, Latin only, or both
-- **Tabla designs**: four colour themes for the notebook (Classic, Warm Guru, Ink Contrast, Minimal)
 - **Cloud-ready persistence**: optional Firebase sync for long-term storage and Android migration
 
 Replace the sample Teentaal Kayda with your own notation from your Tabla Vahi.

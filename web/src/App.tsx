@@ -5,9 +5,7 @@ import { DedicationBanner } from "./components/DedicationBanner";
 import { BrowsePanel } from "./components/BrowsePanel";
 import { CompositionView } from "./components/CompositionView";
 import { CompositionEditor } from "./components/CompositionEditor";
-import { DesignsAndImagesPanel } from "./components/DesignsAndImagesPanel";
 import { CloudSyncPanel } from "./components/CloudSyncPanel";
-import { MainNav, type AppSection } from "./components/MainNav";
 import {
   deleteComposition,
   loadCompositions,
@@ -25,19 +23,12 @@ import {
   signOutCloudAccount,
   subscribeCloudUser,
 } from "./lib/cloudPersistence";
-import { loadActiveDesignId, saveActiveDesignId } from "./lib/mediaStorage";
-import { getTablaDesign } from "./data/tablaDesigns";
 import { mr } from "./locale/mr";
 
 type Screen =
   | { name: "browse" }
   | { name: "view"; id: string }
   | { name: "edit"; id?: string };
-
-function applyDesignTheme(designId: string) {
-  const design = getTablaDesign(designId);
-  document.documentElement.dataset.design = design?.themeId ?? "classic";
-}
 
 function formatCloudError(error: unknown): string {
   const message = error instanceof Error ? error.message : "Unknown cloud error";
@@ -58,8 +49,6 @@ export default function App() {
   const cloudConfigured = isCloudConfigured();
   const [compositions, setCompositions] = useState<Composition[]>(loadCompositions);
   const [cloudUser, setCloudUser] = useState<User | null>(null);
-  const [activeDesignId, setActiveDesignId] = useState(loadActiveDesignId);
-  const [section, setSection] = useState<AppSection>("compositions");
   const [screen, setScreen] = useState<Screen>({ name: "browse" });
   const [selectedTaalId, setSelectedTaalId] = useState("teentaal");
   const [selectedKind, setSelectedKind] = useState<CompositionKind | "all">(
@@ -74,10 +63,6 @@ export default function App() {
       ? "Cloud sync is enabled."
       : "Cloud not configured yet. Using browser storage only.",
   );
-
-  useEffect(() => {
-    applyDesignTheme(activeDesignId);
-  }, [activeDesignId]);
 
   useEffect(() => {
     if (!cloudConfigured) {
@@ -163,18 +148,6 @@ export default function App() {
     void syncCompositionsToCloud(next);
   }, [syncCompositionsToCloud]);
 
-  const handleDesignChange = (designId: string) => {
-    setActiveDesignId(designId);
-    saveActiveDesignId(designId);
-  };
-
-  const handleSectionChange = (next: AppSection) => {
-    setSection(next);
-    if (next === "designs") {
-      setScreen({ name: "browse" });
-    }
-  };
-
   const activeComposition = useMemo(() => {
     if (screen.name === "browse") return undefined;
     const id = screen.name === "edit" ? screen.id : screen.id;
@@ -197,7 +170,6 @@ export default function App() {
         undefined,
     };
     persist(upsertComposition(compositions, normalized));
-    setSection("compositions");
     setScreen({ name: "view", id: normalized.id });
   };
 
@@ -276,53 +248,42 @@ export default function App() {
             <button
               type="button"
               onClick={() => {
-                setSection("compositions");
                 setScreen({ name: "browse" });
               }}
               className="font-devanagari text-lg font-bold text-maroon hover:opacity-80"
             >
               {mr.appTitle}
             </button>
-            <MainNav active={section} onChange={handleSectionChange} />
           </div>
 
-          {section === "compositions" && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-ink/50">{mr.display}:</span>
-              {(
-                [
-                  ["both", mr.displayBoth],
-                  ["devanagari", mr.displayMarathi],
-                  ["latin", mr.displayLatin],
-                ] as const
-              ).map(([mode, label]) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setDisplayMode(mode)}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                    displayMode === mode
-                      ? "bg-maroon text-parchment"
-                      : "bg-parchment-dark text-ink/70 hover:bg-saffron/30"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-ink/50">{mr.display}:</span>
+            {(
+              [
+                ["both", mr.displayBoth],
+                ["devanagari", mr.displayMarathi],
+                ["latin", mr.displayLatin],
+              ] as const
+            ).map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setDisplayMode(mode)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                  displayMode === mode
+                    ? "bg-maroon text-parchment"
+                    : "bg-parchment-dark text-ink/70 hover:bg-saffron/30"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
       <main className="flex-1 px-4 py-8">
-        {section === "designs" && (
-          <DesignsAndImagesPanel
-            activeDesignId={activeDesignId}
-            onDesignChange={handleDesignChange}
-          />
-        )}
-
-        {section === "compositions" && screen.name === "browse" && (
+        {screen.name === "browse" && (
           <BrowsePanel
             compositions={compositions}
             selectedTaalId={selectedTaalId}
@@ -336,7 +297,7 @@ export default function App() {
           />
         )}
 
-        {section === "compositions" && screen.name === "view" && activeComposition && (
+        {screen.name === "view" && activeComposition && (
           <CompositionView
             composition={activeComposition}
             displayMode={displayMode}
@@ -349,13 +310,11 @@ export default function App() {
           />
         )}
 
-        {section === "compositions" &&
-          screen.name === "view" &&
-          !activeComposition && (
-            <p className="text-center text-ink/50">Composition not found.</p>
-          )}
+        {screen.name === "view" && !activeComposition && (
+          <p className="text-center text-ink/50">Composition not found.</p>
+        )}
 
-        {section === "compositions" && screen.name === "edit" && (
+        {screen.name === "edit" && (
           <CompositionEditor
             initial={
               screen.id
@@ -373,8 +332,7 @@ export default function App() {
           />
         )}
 
-        {section === "compositions" &&
-          screen.name === "edit" &&
+        {screen.name === "edit" &&
           screen.id &&
           activeComposition &&
           canEditActiveComposition && (
