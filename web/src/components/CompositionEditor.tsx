@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type {
   BeatMarker,
   Composition,
@@ -23,8 +23,19 @@ interface CompositionEditorProps {
   onCancel: () => void;
 }
 
+type ActiveCell = {
+  lineIndex: number;
+  cellIndex: number;
+  selectionStart: number;
+  selectionEnd: number;
+};
+
 function createId(): string {
   return `comp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function cellKey(lineIndex: number, cellIndex: number): string {
+  return `${lineIndex}-${cellIndex}`;
 }
 
 export function CompositionEditor({
@@ -43,8 +54,24 @@ export function CompositionEditor({
   const [lines, setLines] = useState<CompositionLine[]>(
     initial?.lines ?? [newLineForTaal(getTaal("teentaal")!)],
   );
+  const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
+  const cellInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const taal = useMemo(() => getTaal(taalId), [taalId]);
+
+  const rememberActiveCell = (
+    lineIndex: number,
+    cellIndex: number,
+    input: HTMLInputElement,
+  ) => {
+    const cursor = input.value.length;
+    setActiveCell({
+      lineIndex,
+      cellIndex,
+      selectionStart: input.selectionStart ?? cursor,
+      selectionEnd: input.selectionEnd ?? cursor,
+    });
+  };
 
   const handleTaalChange = useCallback((newTaalId: string) => {
     const newTaal = getTaal(newTaalId);
@@ -101,6 +128,43 @@ export function CompositionEditor({
         cells: applyTaalMarkers(next[lineIndex].cells, taal),
       };
       return next;
+    });
+  };
+
+  const insertBolIntoActiveCell = (bol: string) => {
+    if (!activeCell) return;
+
+    const { lineIndex, cellIndex, selectionStart, selectionEnd } = activeCell;
+    let nextCursor = selectionStart + bol.length;
+
+    setLines((prev) => {
+      const current = prev[lineIndex]?.cells[cellIndex];
+      if (!current) return prev;
+
+      const start = Math.min(selectionStart, current.devanagari.length);
+      const end = Math.min(selectionEnd, current.devanagari.length);
+      nextCursor = start + bol.length;
+      const nextValue = `${current.devanagari.slice(0, start)}${bol}${current.devanagari.slice(end)}`;
+
+      const next = [...prev];
+      const line = { ...next[lineIndex], cells: [...next[lineIndex].cells] };
+      line.cells[cellIndex] = { ...current, devanagari: nextValue };
+      next[lineIndex] = line;
+      return next;
+    });
+
+    const nextActiveCell = {
+      lineIndex,
+      cellIndex,
+      selectionStart: nextCursor,
+      selectionEnd: nextCursor,
+    };
+    setActiveCell(nextActiveCell);
+
+    window.requestAnimationFrame(() => {
+      const input = cellInputRefs.current[cellKey(lineIndex, cellIndex)];
+      input?.focus();
+      input?.setSelectionRange(nextCursor, nextCursor);
     });
   };
 
@@ -212,16 +276,26 @@ export function CompositionEditor({
 
       {/* Quick-insert bols */}
       <div className="mb-6 flex flex-wrap gap-1.5 rounded-lg border border-dashed border-saffron/40 bg-saffron/5 p-3">
-        <span className="w-full text-xs text-ink/50">Quick insert:</span>
+        <span className="w-full text-xs text-ink/50">
+          Quick insert: select a matra cell, then tap a bol
+        </span>
         {COMMON_BOLS.map(({ devanagari, latin }) => (
-          <span
+          <button
             key={devanagari}
-            className="rounded bg-white px-2 py-0.5 text-xs text-ink/60"
-            title={`Click a cell, then type or paste: ${devanagari}`}
+            type="button"
+            disabled={!activeCell}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => insertBolIntoActiveCell(devanagari)}
+            className="rounded border border-parchment-dark bg-white px-2 py-1 text-xs text-ink/70 shadow-sm transition hover:border-saffron hover:text-maroon disabled:cursor-not-allowed disabled:opacity-45"
+            title={
+              activeCell
+                ? `Insert ${devanagari} into selected cell`
+                : "Select a matra cell first"
+            }
           >
             <span className="font-devanagari font-semibold">{devanagari}</span>{" "}
             <span className="text-maroon-light">({latin})</span>
-          </span>
+          </button>
         ))}
       </div>
 
@@ -309,14 +383,35 @@ export function CompositionEditor({
                     {markerSymbol(cell.marker, cell.taaliNumber) || "·"}
                   </span>
                   <input
+                    ref={(node) => {
+                      cellInputRefs.current[cellKey(lineIndex, cellIndex)] = node;
+                    }}
                     type="text"
                     value={cell.devanagari}
-                    onChange={(e) =>
+                    onFocus={(e) =>
+                      rememberActiveCell(lineIndex, cellIndex, e.currentTarget)
+                    }
+                    onClick={(e) =>
+                      rememberActiveCell(lineIndex, cellIndex, e.currentTarget)
+                    }
+                    onKeyUp={(e) =>
+                      rememberActiveCell(lineIndex, cellIndex, e.currentTarget)
+                    }
+                    onSelect={(e) =>
+                      rememberActiveCell(lineIndex, cellIndex, e.currentTarget)
+                    }
+                    onChange={(e) => {
                       updateCell(lineIndex, cellIndex, {
                         devanagari: e.target.value,
-                      })
-                    }
-                    className="font-devanagari rounded border border-parchment-dark bg-white px-1 py-1.5 text-center text-lg font-semibold focus:border-saffron focus:ring-1 focus:ring-saffron/30 focus:outline-none"
+                      });
+                      rememberActiveCell(lineIndex, cellIndex, e.currentTarget);
+                    }}
+                    className={`font-devanagari rounded border bg-white px-1 py-1.5 text-center text-lg font-semibold focus:border-saffron focus:ring-1 focus:ring-saffron/30 focus:outline-none ${
+                      activeCell?.lineIndex === lineIndex &&
+                      activeCell?.cellIndex === cellIndex
+                        ? "border-saffron ring-1 ring-saffron/30"
+                        : "border-parchment-dark"
+                    }`}
                     placeholder="धा"
                     lang="mr"
                     inputMode="text"
