@@ -28,6 +28,7 @@ import {
   buildBrowsePath,
   buildCompositionPath,
   compositionIdFromSlug,
+  openingBolSlug,
   parseKindSegment,
   pathSegments,
   slugifySegment,
@@ -88,14 +89,18 @@ function parseAppRoute(location: Location): ParsedAppRoute {
   }
 
   const kind = parseKindSegment(segments[1]) ?? "all";
-  const compositionId = segments[2]
+  const newFormatId =
+    segments[3] && segments[3].startsWith("comp-") ? segments[3] : undefined;
+  const legacyFormatId = segments[2]
     ? (compositionIdFromSlug(segments[2]) ?? segments[2])
     : undefined;
+  const compositionId = newFormatId ?? legacyFormatId;
+  const editSegment = newFormatId ? segments[4] : segments[3];
 
   if (compositionId) {
     return {
       screen:
-        segments[3] === "edit"
+        editSegment === "edit"
           ? { name: "edit", id: compositionId }
           : { name: "view", id: compositionId },
       selectedTaalId: taal.id,
@@ -304,7 +309,10 @@ export default function App() {
     if (!id) return undefined;
     return compositions.find((c) => {
       if (c.id === id) return true;
-      return slugifySegment(c.title || c.titleDevanagari || "composition") === id;
+      return (
+        openingBolSlug(c) === id ||
+        slugifySegment(c.title || c.titleDevanagari || "composition") === id
+      );
     });
   }, [screen, compositions]);
 

@@ -1,5 +1,6 @@
 import type { Composition, CompositionKind, CompositionLine } from "../types";
 import { COMPOSITION_LINE_SECTION_LABELS } from "../types";
+import { transliterateBol } from "./transliteration";
 
 const KIND_ALIASES: Record<string, CompositionKind> = {
   taal: "taal",
@@ -55,6 +56,27 @@ export function slugifySegment(value: string): string {
   return slug || "composition";
 }
 
+function bolSlugPart(devanagari: string): string {
+  const english = transliterateBol(devanagari).replace(/\s+/g, "");
+  return english.replace(/[^\p{Letter}\p{Mark}\p{Number}]+/gu, "");
+}
+
+export function openingBolSlug(composition: Composition): string {
+  const bolParts = composition.lines
+    .flatMap((line) => line.cells)
+    .map((cell) => cell.devanagari.trim())
+    .filter(Boolean)
+    .map(bolSlugPart)
+    .filter(Boolean)
+    .slice(0, 8);
+
+  if (bolParts.length > 0) return bolParts.join("-");
+
+  return slugifySegment(
+    composition.title || composition.titleDevanagari || "composition",
+  );
+}
+
 export function buildBrowsePath(
   taalId: string,
   kind: CompositionKind | "all",
@@ -66,10 +88,7 @@ export function buildBrowsePath(
 }
 
 export function buildCompositionPath(composition: Composition): string {
-  const titleSlug = slugifySegment(
-    composition.title || composition.titleDevanagari || "composition",
-  );
-  return `/${encodeURIComponent(composition.taalId)}/${composition.kind}/${titleSlug}--${encodeURIComponent(composition.id)}`;
+  return `/${encodeURIComponent(composition.taalId)}/${composition.kind}/${encodeURIComponent(openingBolSlug(composition))}/${encodeURIComponent(composition.id)}`;
 }
 
 export function compositionIdFromSlug(segment: string): string | undefined {
