@@ -39,6 +39,21 @@ function applyDesignTheme(designId: string) {
   document.documentElement.dataset.design = design?.themeId ?? "classic";
 }
 
+function formatCloudError(error: unknown): string {
+  const message = error instanceof Error ? error.message : "Unknown cloud error";
+  const code =
+    typeof error === "object" &&
+    error != null &&
+    "code" in error &&
+    typeof error.code === "string"
+      ? error.code
+      : undefined;
+  if (code === "auth/configuration-not-found") {
+    return "Google sign-in is not enabled in Firebase Authentication for this project. Enable Authentication -> Sign-in method -> Google in Firebase Console.";
+  }
+  return code ? `${code}: ${message}` : message;
+}
+
 export default function App() {
   const cloudConfigured = isCloudConfigured();
   const [compositions, setCompositions] = useState<Composition[]>(loadCompositions);
@@ -229,15 +244,10 @@ export default function App() {
   const handleCloudSignIn = async () => {
     try {
       setCloudBusy(true);
-      const method = await signInWithGoogleAccount();
-      setCloudStatus(
-        method === "redirect"
-          ? "Redirecting to Google sign-in..."
-          : "Google sign-in successful.",
-      );
+      setCloudStatus("Redirecting to Google sign-in...");
+      await signInWithGoogleAccount();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown cloud error";
-      setCloudStatus(`Google sign-in failed: ${message}`);
+      setCloudStatus(`Google sign-in failed: ${formatCloudError(error)}`);
     } finally {
       setCloudBusy(false);
     }
