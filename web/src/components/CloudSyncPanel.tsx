@@ -31,10 +31,10 @@ export function CloudSyncPanel({
       : user.isAnonymous
         ? mr.cloudAccountAnonymous
         : (user.email ?? user.uid);
-  const configuredLabel = configured ? "होय" : "नाही";
+  const configuredLabel = configured ? mr.cloudYes : mr.cloudNo;
 
   const lastSyncLabel = lastSyncAt
-    ? new Date(lastSyncAt).toLocaleString("mr-IN")
+    ? new Date(lastSyncAt).toLocaleString("en-US")
     : mr.cloudLastSyncNever;
 
   return (

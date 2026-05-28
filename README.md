@@ -54,7 +54,7 @@ npm install
 npm run dev
 ```
 
-5) In the app footer, use **Google ने साइन-इन करा**, then **Sync now** to upload compositions.
+5) In the app footer, use **Sign in with Google**, then **Sync now** to upload compositions.
 
 After this, compositions are written to Firestore under your Google account.
 
