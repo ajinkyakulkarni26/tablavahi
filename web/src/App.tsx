@@ -17,6 +17,7 @@ import {
 } from "./lib/storage";
 import {
   deleteCompositionFromCloud,
+  finalizeGoogleRedirectSignIn,
   isCloudConfigured,
   loadCompositionsFromCloud,
   saveCompositionsToCloud,
@@ -65,8 +66,16 @@ export default function App() {
 
   useEffect(() => {
     if (!cloudConfigured) return;
+    void finalizeGoogleRedirectSignIn().catch((error) => {
+      const message =
+        error instanceof Error ? error.message : "Unknown cloud error";
+      setCloudStatus(`Google sign-in failed: ${message}`);
+    });
     const unsub = subscribeCloudUser((user) => {
       setCloudUser(user);
+      if (user && !user.isAnonymous) {
+        setCloudStatus(`Signed in as ${user.email ?? user.uid}`);
+      }
     });
     return () => {
       unsub();
@@ -214,6 +223,32 @@ export default function App() {
     }
   };
 
+  const handleCloudSignIn = async () => {
+    try {
+      setCloudBusy(true);
+      await signInWithGoogleAccount();
+      setCloudStatus("Google sign-in successful.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown cloud error";
+      setCloudStatus(`Google sign-in failed: ${message}`);
+    } finally {
+      setCloudBusy(false);
+    }
+  };
+
+  const handleCloudSignOut = async () => {
+    try {
+      setCloudBusy(true);
+      await signOutCloudAccount();
+      setCloudStatus("Signed out from Google account.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown cloud error";
+      setCloudStatus(`Sign-out failed: ${message}`);
+    } finally {
+      setCloudBusy(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <DedicationBanner />
@@ -348,10 +383,10 @@ export default function App() {
           user={cloudUser}
           lastSyncAt={lastSyncAt}
           onSignIn={() => {
-            void signInWithGoogleAccount();
+            void handleCloudSignIn();
           }}
           onSignOut={() => {
-            void signOutCloudAccount();
+            void handleCloudSignOut();
           }}
           onSyncNow={() => {
             void handleMigrateNow();

@@ -1,11 +1,14 @@
 import { initializeApp, type FirebaseApp } from "firebase/app";
 import {
+  getRedirectResult,
   GoogleAuthProvider,
   onAuthStateChanged,
   getAuth,
   signInAnonymously,
+  signInWithRedirect,
   signInWithPopup,
   signOut,
+  type AuthError,
   type Auth,
   type User,
 } from "firebase/auth";
@@ -94,12 +97,27 @@ export function subscribeCloudUser(
 export async function signInWithGoogleAccount(): Promise<void> {
   const { auth } = ensureClient();
   const provider = new GoogleAuthProvider();
-  await signInWithPopup(auth, provider);
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    const code = (error as AuthError).code;
+    // Popup often fails on mobile/in-app browsers; redirect is more reliable.
+    if (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request") {
+      await signInWithRedirect(auth, provider);
+      return;
+    }
+    throw error;
+  }
 }
 
 export async function signOutCloudAccount(): Promise<void> {
   const { auth } = ensureClient();
   await signOut(auth);
+}
+
+export async function finalizeGoogleRedirectSignIn(): Promise<void> {
+  const { auth } = ensureClient();
+  await getRedirectResult(auth);
 }
 
 export async function loadCompositionsFromCloud(): Promise<Composition[]> {
