@@ -1,6 +1,6 @@
 import type { CompositionLine, DisplayMode, Taal } from "../types";
 import { COMPOSITION_LINE_SECTION_LABELS } from "../types";
-import { markerSymbol } from "../lib/annotations";
+import { groupCellsByVibhag, markerSymbol } from "../lib/annotations";
 import { transliterateBol } from "../lib/transliteration";
 
 interface BolGridProps {
@@ -19,15 +19,6 @@ export function BolGrid({
   showVibhag = true,
   compact = false,
 }: BolGridProps) {
-  const vibhagEnds = new Set<number>();
-  if (showVibhag) {
-    let acc = 0;
-    for (const size of taal.vibhag) {
-      acc += size;
-      if (acc < taal.matras) vibhagEnds.add(acc - 1);
-    }
-  }
-
   return (
     <div className="space-y-3">
       {lines.map((line, lineIndex) => {
@@ -55,61 +46,70 @@ export function BolGrid({
             <div
               className={`flex flex-wrap justify-center gap-0 ${compact ? "gap-y-1" : "gap-y-2"}`}
             >
-              {line.cells.map((cell, cellIndex) => {
-                const latin = transliterateBol(cell.devanagari);
-                const showDev =
-                  displayMode === "both" || displayMode === "devanagari";
-                const showLatin =
-                  displayMode === "both" || displayMode === "latin";
-                const marker = markerSymbol(cell.marker, cell.taaliNumber);
-                const isVibhagEnd = vibhagEnds.has(cellIndex);
+              {groupCellsByVibhag(line.cells, taal).map((group) => (
+                <div
+                  key={group.startIndex}
+                  className={`
+                    flex shrink-0 flex-nowrap justify-center
+                    ${showVibhag && !group.isLast ? "mr-2 border-r-2 border-saffron/40 pr-2" : ""}
+                  `}
+                >
+                  {group.cells.map((cell, offset) => {
+                    const cellIndex = group.startIndex + offset;
+                    const latin = transliterateBol(cell.devanagari);
+                    const showDev =
+                      displayMode === "both" || displayMode === "devanagari";
+                    const showLatin =
+                      displayMode === "both" || displayMode === "latin";
+                    const marker = markerSymbol(cell.marker, cell.taaliNumber);
 
-                return (
-                  <div
-                    key={cellIndex}
-                    className={`
-                      flex flex-col items-center
-                      ${compact ? "min-w-[2.25rem] px-0.5" : "min-w-[2.75rem] px-1"}
-                      ${isVibhagEnd ? "mr-2 border-r-2 border-saffron/40 pr-2" : ""}
-                    `}
-                  >
-                    <span
-                      className={`
-                        font-devanagari leading-none font-semibold text-maroon
-                        ${marker ? "opacity-100" : "opacity-0"}
-                        ${compact ? "h-5 text-sm" : "h-6 text-base"}
-                      `}
-                      aria-hidden={!marker}
-                    >
-                      {marker || "·"}
-                    </span>
-                    {showDev && (
-                      <span
+                    return (
+                      <div
+                        key={cellIndex}
                         className={`
-                          font-devanagari font-bold text-ink
-                          ${compact ? "text-lg" : "text-xl md:text-2xl"}
+                          flex shrink-0 flex-col items-center
+                          ${compact ? "min-w-[2.25rem] px-0.5" : "min-w-[2.75rem] px-1"}
                         `}
                       >
-                        {cell.devanagari || "—"}
-                      </span>
-                    )}
-                    {showLatin && (
-                      <span
-                        className={`
-                          text-maroon-light tracking-tight
-                          ${compact ? "text-[10px]" : "text-xs"}
-                          ${showDev ? "mt-0.5" : "text-base font-medium"}
-                        `}
-                      >
-                        {latin || (cell.devanagari ? "?" : "")}
-                      </span>
-                    )}
-                    <span className="mt-1 text-[11px] text-ink/35 tabular-nums">
-                      {cellIndex + 1}
-                    </span>
-                  </div>
-                );
-              })}
+                        <span
+                          className={`
+                            font-devanagari leading-none font-semibold whitespace-nowrap text-maroon
+                            ${marker ? "opacity-100" : "opacity-0"}
+                            ${compact ? "h-5 text-sm" : "h-6 text-base"}
+                          `}
+                          aria-hidden={!marker}
+                        >
+                          {marker || "·"}
+                        </span>
+                        {showDev && (
+                          <span
+                            className={`
+                              font-devanagari font-bold whitespace-nowrap text-ink
+                              ${compact ? "text-lg" : "text-xl md:text-2xl"}
+                            `}
+                          >
+                            {cell.devanagari || "—"}
+                          </span>
+                        )}
+                        {showLatin && (
+                          <span
+                            className={`
+                              whitespace-nowrap text-maroon-light tracking-tight
+                              ${compact ? "text-[10px]" : "text-xs"}
+                              ${showDev ? "mt-0.5" : "text-base font-medium"}
+                            `}
+                          >
+                            {latin || (cell.devanagari ? "?" : "")}
+                          </span>
+                        )}
+                        <span className="mt-1 text-[11px] text-ink/35 tabular-nums">
+                          {cellIndex + 1}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           </div>
         );

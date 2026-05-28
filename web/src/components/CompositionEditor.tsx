@@ -15,6 +15,7 @@ import { TAALS, getTaal } from "../data/taals";
 import {
   applyTaalMarkers,
   emptyLine,
+  groupCellsByVibhag,
   markerSymbol,
   newLineForTaal,
 } from "../lib/annotations";
@@ -787,94 +788,131 @@ export function CompositionEditor({
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {line.cells.map((cell, cellIndex) => (
+            <div className="flex flex-wrap gap-y-3">
+              {groupCellsByVibhag(line.cells, taal).map((group) => (
                 <div
-                  key={cellIndex}
-                  className="flex w-[4.5rem] flex-col items-stretch"
+                  key={group.startIndex}
+                  className={`flex shrink-0 flex-nowrap gap-2 ${
+                    !group.isLast
+                      ? "mr-2 border-r-2 border-saffron/35 pr-3"
+                      : ""
+                  }`}
                 >
-                  <select
-                    value={
-                      cell.marker
-                        ? cell.marker === "taali"
-                          ? `taali-${cell.taaliNumber ?? 1}`
-                          : cell.marker
-                        : ""
-                    }
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      if (!v) {
-                        updateCell(lineIndex, cellIndex, {
-                          marker: undefined,
-                          taaliNumber: undefined,
-                        });
-                      } else if (v.startsWith("taali-")) {
-                        updateCell(lineIndex, cellIndex, {
-                          marker: "taali",
-                          taaliNumber: Number(v.split("-")[1]),
-                        });
-                      } else {
-                        updateCell(lineIndex, cellIndex, {
-                          marker: v as BeatMarker,
-                          taaliNumber: undefined,
-                        });
-                      }
-                    }}
-                    className="mb-0.5 rounded border border-parchment-dark bg-parchment px-0.5 py-0.5 text-center text-xs"
-                    title="Beat marker"
-                  >
-                    <option value="">—</option>
-                    <option value="sam">× Sam</option>
-                    <option value="khali">० Khali</option>
-                    <option value="taali-1">1 Taali</option>
-                    <option value="taali-2">2 Taali</option>
-                    <option value="taali-3">3 Taali</option>
-                    <option value="taali-4">4 Taali</option>
-                  </select>
-                  <span className="text-center font-devanagari text-xs text-maroon/80">
-                    {markerSymbol(cell.marker, cell.taaliNumber) || "·"}
-                  </span>
-                  <input
-                    ref={(node) => {
-                      cellInputRefs.current[cellKey(lineIndex, cellIndex)] = node;
-                    }}
-                    type="text"
-                    value={cell.devanagari}
-                    onFocus={(e) =>
-                      rememberActiveCell(lineIndex, cellIndex, e.currentTarget)
-                    }
-                    onClick={(e) =>
-                      rememberActiveCell(lineIndex, cellIndex, e.currentTarget)
-                    }
-                    onKeyUp={(e) =>
-                      rememberActiveCell(lineIndex, cellIndex, e.currentTarget)
-                    }
-                    onSelect={(e) =>
-                      rememberActiveCell(lineIndex, cellIndex, e.currentTarget)
-                    }
-                    onChange={(e) => {
-                      updateCell(lineIndex, cellIndex, {
-                        devanagari: e.target.value,
-                      });
-                      rememberActiveCell(lineIndex, cellIndex, e.currentTarget);
-                    }}
-                    className={`font-devanagari rounded border bg-white px-1 py-1.5 text-center text-lg font-semibold focus:border-saffron focus:ring-1 focus:ring-saffron/30 focus:outline-none ${
-                      activeCell?.lineIndex === lineIndex &&
-                      activeCell?.cellIndex === cellIndex
-                        ? "border-saffron ring-1 ring-saffron/30"
-                        : "border-parchment-dark"
-                    }`}
-                    placeholder="धा"
-                    lang="mr"
-                    inputMode="text"
-                    aria-label={`Matra ${cellIndex + 1} bol`}
-                  />
-                  <span className="truncate text-center text-[11px] text-maroon-light">
-                    {transliterateBol(cell.devanagari) || "—"}
-                  </span>
-                  <span className="text-center text-[10px] text-ink/35">
-                    {cellIndex + 1}
-                  </span>
+                  {group.cells.map((cell, offset) => {
+                    const cellIndex = group.startIndex + offset;
+
+                    return (
+                      <div
+                        key={cellIndex}
+                        className="flex w-[4.5rem] shrink-0 flex-col items-stretch"
+                      >
+                        <select
+                          value={
+                            cell.marker
+                              ? cell.marker === "taali"
+                                ? `taali-${cell.taaliNumber ?? 1}`
+                                : cell.marker
+                              : ""
+                          }
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (!v) {
+                              updateCell(lineIndex, cellIndex, {
+                                marker: undefined,
+                                taaliNumber: undefined,
+                              });
+                            } else if (v.startsWith("taali-")) {
+                              updateCell(lineIndex, cellIndex, {
+                                marker: "taali",
+                                taaliNumber: Number(v.split("-")[1]),
+                              });
+                            } else {
+                              updateCell(lineIndex, cellIndex, {
+                                marker: v as BeatMarker,
+                                taaliNumber: undefined,
+                              });
+                            }
+                          }}
+                          className="mb-0.5 rounded border border-parchment-dark bg-parchment px-0.5 py-0.5 text-center text-xs"
+                          title="Beat marker"
+                        >
+                          <option value="">—</option>
+                          <option value="sam">× Sam</option>
+                          <option value="khali">० Khali</option>
+                          <option value="taali-1">1 Taali</option>
+                          <option value="taali-2">2 Taali</option>
+                          <option value="taali-3">3 Taali</option>
+                          <option value="taali-4">4 Taali</option>
+                        </select>
+                        <span className="text-center font-devanagari text-xs text-maroon/80">
+                          {markerSymbol(cell.marker, cell.taaliNumber) || "·"}
+                        </span>
+                        <input
+                          ref={(node) => {
+                            cellInputRefs.current[
+                              cellKey(lineIndex, cellIndex)
+                            ] = node;
+                          }}
+                          type="text"
+                          value={cell.devanagari}
+                          onFocus={(e) =>
+                            rememberActiveCell(
+                              lineIndex,
+                              cellIndex,
+                              e.currentTarget,
+                            )
+                          }
+                          onClick={(e) =>
+                            rememberActiveCell(
+                              lineIndex,
+                              cellIndex,
+                              e.currentTarget,
+                            )
+                          }
+                          onKeyUp={(e) =>
+                            rememberActiveCell(
+                              lineIndex,
+                              cellIndex,
+                              e.currentTarget,
+                            )
+                          }
+                          onSelect={(e) =>
+                            rememberActiveCell(
+                              lineIndex,
+                              cellIndex,
+                              e.currentTarget,
+                            )
+                          }
+                          onChange={(e) => {
+                            updateCell(lineIndex, cellIndex, {
+                              devanagari: e.target.value,
+                            });
+                            rememberActiveCell(
+                              lineIndex,
+                              cellIndex,
+                              e.currentTarget,
+                            );
+                          }}
+                          className={`font-devanagari rounded border bg-white px-1 py-1.5 text-center text-lg font-semibold focus:border-saffron focus:ring-1 focus:ring-saffron/30 focus:outline-none ${
+                            activeCell?.lineIndex === lineIndex &&
+                            activeCell?.cellIndex === cellIndex
+                              ? "border-saffron ring-1 ring-saffron/30"
+                              : "border-parchment-dark"
+                          }`}
+                          placeholder="धा"
+                          lang="mr"
+                          inputMode="text"
+                          aria-label={`Matra ${cellIndex + 1} bol`}
+                        />
+                        <span className="truncate text-center text-[11px] text-maroon-light">
+                          {transliterateBol(cell.devanagari) || "—"}
+                        </span>
+                        <span className="text-center text-[10px] text-ink/35">
+                          {cellIndex + 1}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               ))}
             </div>

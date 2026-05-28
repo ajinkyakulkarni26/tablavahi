@@ -1,5 +1,11 @@
 import type { BeatMarker, CompositionLine, MatraCell, Taal } from "../types";
 
+export interface VibhagCellGroup<T> {
+  cells: T[];
+  startIndex: number;
+  isLast: boolean;
+}
+
 /** Display symbol for beat markers (traditional notation style) */
 export function markerSymbol(
   marker: BeatMarker | undefined,
@@ -46,4 +52,34 @@ export function emptyLine(matras: number): MatraCell[] {
 
 export function newLineForTaal(taal: Taal): CompositionLine {
   return { cells: applyTaalMarkers(emptyLine(taal.matras), taal) };
+}
+
+export function groupCellsByVibhag<T>(
+  cells: T[],
+  taal: Taal,
+): VibhagCellGroup<T>[] {
+  const groups: Omit<VibhagCellGroup<T>, "isLast">[] = [];
+  let startIndex = 0;
+
+  for (const size of taal.vibhag) {
+    if (startIndex >= cells.length) break;
+    const endIndex = Math.min(startIndex + size, cells.length);
+    groups.push({
+      cells: cells.slice(startIndex, endIndex),
+      startIndex,
+    });
+    startIndex = endIndex;
+  }
+
+  if (startIndex < cells.length) {
+    groups.push({
+      cells: cells.slice(startIndex),
+      startIndex,
+    });
+  }
+
+  return groups.map((group, index) => ({
+    ...group,
+    isLast: index === groups.length - 1,
+  }));
 }
