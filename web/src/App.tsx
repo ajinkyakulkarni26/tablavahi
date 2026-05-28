@@ -6,6 +6,7 @@ import { BrowsePanel } from "./components/BrowsePanel";
 import { CompositionView } from "./components/CompositionView";
 import { CompositionEditor } from "./components/CompositionEditor";
 import { CloudSyncPanel } from "./components/CloudSyncPanel";
+import { DeveloperContact } from "./components/DeveloperContact";
 import {
   deleteComposition,
   loadCompositions,
@@ -404,6 +405,7 @@ export default function App() {
             void handleMigrateNow();
           }}
         />
+        <DeveloperContact />
         <button
           type="button"
           onClick={() => {
