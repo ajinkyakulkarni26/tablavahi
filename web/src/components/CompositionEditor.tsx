@@ -623,8 +623,8 @@ export function CompositionEditor({
       </div>
 
       {/* Quick-insert bols */}
-      <div className="mb-6 rounded-lg border border-dashed border-saffron/40 bg-saffron/5 p-3">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="sticky top-0 z-20 mb-6 rounded-lg border border-saffron/40 bg-parchment/95 p-3 shadow-md shadow-ink/10 backdrop-blur">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="text-xs font-medium tracking-wide text-ink/60 uppercase">
               Quick insert
@@ -647,7 +647,7 @@ export function CompositionEditor({
           </label>
         </div>
 
-        <div className="mb-3 flex flex-wrap gap-2">
+        <div className="mb-2 flex flex-wrap gap-2">
           <button
             type="button"
             disabled={!activeMatraCell}
@@ -677,7 +677,7 @@ export function CompositionEditor({
           </button>
         </div>
 
-        <div className="mb-3 flex flex-wrap gap-2">
+        <div className="mb-2 flex flex-wrap gap-2">
           {[
             ["", "No marker"],
             ["sam", "× Sam"],
@@ -711,6 +711,7 @@ export function CompositionEditor({
           ))}
         </div>
 
+        <div className="max-h-36 overflow-y-auto pr-1">
         <div className="flex flex-wrap gap-2">
         {COMMON_BOLS.map(({ devanagari, latin }) => (
           <button
@@ -730,6 +731,7 @@ export function CompositionEditor({
             <span className="text-maroon-light">({latin})</span>
           </button>
         ))}
+        </div>
         </div>
       </div>
 
