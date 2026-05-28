@@ -63,7 +63,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: "browse" });
   const [selectedTaalId, setSelectedTaalId] = useState("teentaal");
   const [selectedKind, setSelectedKind] = useState<CompositionKind | "all">(
-    "kayda",
+    "all",
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [displayMode, setDisplayMode] = useState<DisplayMode>("both");
