@@ -3,7 +3,7 @@
  * Bols use Devanagari script; the spoken/written language here is Marathi, not Hindi.
  */
 export const mr = {
-  appTitle: "तबला वही",
+  appTitle: "तबल्याची वही",
   appSubtitle: "तुमची डिजिटल तबला नोंदवही",
 
   guruName: "वंदनीय श्री प्रफुल्ल आठल्ये",
