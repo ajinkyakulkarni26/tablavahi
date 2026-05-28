@@ -55,9 +55,12 @@ export function CompositionEditor({
     initial?.lines ?? [newLineForTaal(getTaal("teentaal")!)],
   );
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
+  const [advanceAfterInsert, setAdvanceAfterInsert] = useState(true);
   const cellInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const taal = useMemo(() => getTaal(taalId), [taalId]);
+  const activeMatraCell =
+    activeCell != null ? lines[activeCell.lineIndex]?.cells[activeCell.cellIndex] : undefined;
 
   const rememberActiveCell = (
     lineIndex: number,
@@ -71,6 +74,56 @@ export function CompositionEditor({
       selectionStart: input.selectionStart ?? cursor,
       selectionEnd: input.selectionEnd ?? cursor,
     });
+  };
+
+  const focusCell = (
+    lineIndex: number,
+    cellIndex: number,
+    options: {
+      selectAll?: boolean;
+      selectionStart?: number;
+      selectionEnd?: number;
+    } = {},
+  ) => {
+    window.requestAnimationFrame(() => {
+      const input = cellInputRefs.current[cellKey(lineIndex, cellIndex)];
+      const fallbackLength =
+        lines[lineIndex]?.cells[cellIndex]?.devanagari.length ?? 0;
+      const valueLength = input?.value.length ?? fallbackLength;
+      const selectionStart =
+        options.selectionStart ?? (options.selectAll ? 0 : valueLength);
+      const selectionEnd = options.selectionEnd ?? valueLength;
+
+      input?.focus();
+      input?.setSelectionRange(selectionStart, selectionEnd);
+      setActiveCell({
+        lineIndex,
+        cellIndex,
+        selectionStart,
+        selectionEnd,
+      });
+    });
+  };
+
+  const getAdjacentCell = (
+    lineIndex: number,
+    cellIndex: number,
+    direction: "previous" | "next",
+  ): Pick<ActiveCell, "lineIndex" | "cellIndex"> | null => {
+    if (direction === "previous") {
+      if (cellIndex > 0) return { lineIndex, cellIndex: cellIndex - 1 };
+      const previousLine = lines[lineIndex - 1];
+      if (previousLine) {
+        return { lineIndex: lineIndex - 1, cellIndex: previousLine.cells.length - 1 };
+      }
+      return null;
+    }
+
+    if (cellIndex < (lines[lineIndex]?.cells.length ?? 0) - 1) {
+      return { lineIndex, cellIndex: cellIndex + 1 };
+    }
+    if (lines[lineIndex + 1]) return { lineIndex: lineIndex + 1, cellIndex: 0 };
+    return null;
   };
 
   const handleTaalChange = useCallback((newTaalId: string) => {
@@ -132,9 +185,12 @@ export function CompositionEditor({
   };
 
   const insertBolIntoActiveCell = (bol: string) => {
-    if (!activeCell) return;
+    if (!activeCell || !activeMatraCell) return;
 
     const { lineIndex, cellIndex, selectionStart, selectionEnd } = activeCell;
+    const nextCell = advanceAfterInsert
+      ? getAdjacentCell(lineIndex, cellIndex, "next")
+      : null;
     let nextCursor = selectionStart + bol.length;
 
     setLines((prev) => {
@@ -161,11 +217,43 @@ export function CompositionEditor({
     };
     setActiveCell(nextActiveCell);
 
-    window.requestAnimationFrame(() => {
-      const input = cellInputRefs.current[cellKey(lineIndex, cellIndex)];
-      input?.focus();
-      input?.setSelectionRange(nextCursor, nextCursor);
+    if (nextCell) {
+      focusCell(nextCell.lineIndex, nextCell.cellIndex, { selectAll: true });
+      return;
+    }
+
+    focusCell(lineIndex, cellIndex, {
+      selectionStart: nextCursor,
+      selectionEnd: nextCursor,
     });
+  };
+
+  const clearActiveCell = () => {
+    if (!activeCell || !activeMatraCell) return;
+    updateCell(activeCell.lineIndex, activeCell.cellIndex, { devanagari: "" });
+    focusCell(activeCell.lineIndex, activeCell.cellIndex);
+  };
+
+  const moveActiveCell = (direction: "previous" | "next") => {
+    if (!activeCell) return;
+    const target = getAdjacentCell(
+      activeCell.lineIndex,
+      activeCell.cellIndex,
+      direction,
+    );
+    if (target) focusCell(target.lineIndex, target.cellIndex, { selectAll: true });
+  };
+
+  const updateActiveCellMarker = (
+    marker: BeatMarker | undefined,
+    taaliNumber?: number,
+  ) => {
+    if (!activeCell || !activeMatraCell) return;
+    updateCell(activeCell.lineIndex, activeCell.cellIndex, {
+      marker,
+      taaliNumber,
+    });
+    focusCell(activeCell.lineIndex, activeCell.cellIndex, { selectAll: true });
   };
 
   const handleSave = () => {
@@ -275,20 +363,104 @@ export function CompositionEditor({
       </div>
 
       {/* Quick-insert bols */}
-      <div className="mb-6 flex flex-wrap gap-1.5 rounded-lg border border-dashed border-saffron/40 bg-saffron/5 p-3">
-        <span className="w-full text-xs text-ink/50">
-          Quick insert: select a matra cell, then tap a bol
-        </span>
+      <div className="mb-6 rounded-lg border border-dashed border-saffron/40 bg-saffron/5 p-3">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-xs font-medium tracking-wide text-ink/60 uppercase">
+              Quick insert
+            </p>
+            <p className="text-xs text-ink/50">
+              {activeMatraCell
+                ? `Selected: Line ${activeCell!.lineIndex + 1}, Matra ${activeCell!.cellIndex + 1}`
+                : "Select a matra cell, then tap a bol."}
+            </p>
+          </div>
+
+          <label className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs text-ink/70">
+            <input
+              type="checkbox"
+              checked={advanceAfterInsert}
+              onChange={(e) => setAdvanceAfterInsert(e.target.checked)}
+              className="accent-maroon"
+            />
+            Advance after insert
+          </label>
+        </div>
+
+        <div className="mb-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={!activeMatraCell}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => moveActiveCell("previous")}
+            className="rounded-full border border-parchment-dark bg-white px-3 py-1.5 text-xs text-ink/70 hover:border-saffron disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            Previous cell
+          </button>
+          <button
+            type="button"
+            disabled={!activeMatraCell}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => moveActiveCell("next")}
+            className="rounded-full border border-parchment-dark bg-white px-3 py-1.5 text-xs text-ink/70 hover:border-saffron disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            Next cell
+          </button>
+          <button
+            type="button"
+            disabled={!activeMatraCell}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={clearActiveCell}
+            className="rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs text-red-700/70 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            Clear cell
+          </button>
+        </div>
+
+        <div className="mb-3 flex flex-wrap gap-2">
+          {[
+            ["", "No marker"],
+            ["sam", "× Sam"],
+            ["khali", "० Khali"],
+            ["taali-2", "2 Taali"],
+            ["taali-3", "3 Taali"],
+            ["taali-4", "4 Taali"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              disabled={!activeMatraCell}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                if (!value) {
+                  updateActiveCellMarker(undefined, undefined);
+                } else if (value.startsWith("taali-")) {
+                  updateActiveCellMarker(
+                    "taali",
+                    Number(value.split("-")[1]),
+                  );
+                } else {
+                  updateActiveCellMarker(value as BeatMarker, undefined);
+                }
+              }}
+              className="rounded-full border border-parchment-dark bg-parchment px-3 py-1.5 text-xs text-ink/70 hover:border-saffron hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
         {COMMON_BOLS.map(({ devanagari, latin }) => (
           <button
             key={devanagari}
             type="button"
-            disabled={!activeCell}
+            disabled={!activeMatraCell}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => insertBolIntoActiveCell(devanagari)}
-            className="rounded border border-parchment-dark bg-white px-2 py-1 text-xs text-ink/70 shadow-sm transition hover:border-saffron hover:text-maroon disabled:cursor-not-allowed disabled:opacity-45"
+            className="rounded-lg border border-parchment-dark bg-white px-3 py-2 text-sm text-ink/70 shadow-sm transition hover:border-saffron hover:text-maroon disabled:cursor-not-allowed disabled:opacity-45"
             title={
-              activeCell
+              activeMatraCell
                 ? `Insert ${devanagari} into selected cell`
                 : "Select a matra cell first"
             }
@@ -297,6 +469,7 @@ export function CompositionEditor({
             <span className="text-maroon-light">({latin})</span>
           </button>
         ))}
+        </div>
       </div>
 
       <div className="space-y-8">
