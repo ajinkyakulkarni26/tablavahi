@@ -27,7 +27,7 @@ export function markerSymbol(
 /** Apply taal's default sam / khali / taali markers to a row of empty cells */
 export function applyTaalMarkers(cells: MatraCell[], taal: Taal): MatraCell[] {
   return cells.map((cell, index) => {
-    const matra = index + 1;
+    const matra = (index % taal.matras) + 1;
     if (matra === taal.samMatra) {
       return { ...cell, marker: "sam", taaliNumber: undefined };
     }
@@ -61,21 +61,16 @@ export function groupCellsByVibhag<T>(
   const groups: Omit<VibhagCellGroup<T>, "isLast">[] = [];
   let startIndex = 0;
 
-  for (const size of taal.vibhag) {
-    if (startIndex >= cells.length) break;
-    const endIndex = Math.min(startIndex + size, cells.length);
-    groups.push({
-      cells: cells.slice(startIndex, endIndex),
-      startIndex,
-    });
-    startIndex = endIndex;
-  }
-
-  if (startIndex < cells.length) {
-    groups.push({
-      cells: cells.slice(startIndex),
-      startIndex,
-    });
+  while (startIndex < cells.length) {
+    for (const size of taal.vibhag) {
+      if (startIndex >= cells.length) break;
+      const endIndex = Math.min(startIndex + size, cells.length);
+      groups.push({
+        cells: cells.slice(startIndex, endIndex),
+        startIndex,
+      });
+      startIndex = endIndex;
+    }
   }
 
   return groups.map((group, index) => ({

@@ -332,6 +332,24 @@ export function CompositionEditor({
     });
   };
 
+  const setLineCycleCount = (lineIndex: number, cycles: number) => {
+    if (!taal) return;
+    const nextLength = taal.matras * cycles;
+    setLines((prev) => {
+      const next = [...prev];
+      const currentLine = next[lineIndex];
+      const cells = emptyLine(nextLength).map((cell, index) => ({
+        ...cell,
+        devanagari: currentLine.cells[index]?.devanagari ?? "",
+      }));
+      next[lineIndex] = {
+        ...currentLine,
+        cells: applyTaalMarkers(cells, taal),
+      };
+      return next;
+    });
+  };
+
   const applyMarkersToLine = (lineIndex: number) => {
     if (!taal) return;
     setLines((prev) => {
@@ -936,6 +954,27 @@ export function CompositionEditor({
                       className="min-w-0 rounded-full border border-parchment-dark bg-white px-3 py-1 text-xs text-ink/70"
                       placeholder="Section title"
                     />
+                    {line.section === "tihai" && (
+                      <label className="flex items-center gap-1 rounded-full border border-parchment-dark bg-white px-3 py-1 text-xs text-ink/70">
+                        <span>Length</span>
+                        <select
+                          value={Math.max(
+                            1,
+                            Math.ceil(line.cells.length / taal.matras),
+                          )}
+                          onChange={(e) =>
+                            setLineCycleCount(lineIndex, Number(e.target.value))
+                          }
+                          className="bg-transparent font-medium text-maroon focus:outline-none"
+                        >
+                          {[1, 2, 3, 4, 5, 6].map((cycles) => (
+                            <option key={cycles} value={cycles}>
+                              {taal.matras * cycles} matras
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                   </>
                 )}
               </div>

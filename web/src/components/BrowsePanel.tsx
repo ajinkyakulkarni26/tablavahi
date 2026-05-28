@@ -107,6 +107,10 @@ export function BrowsePanel({
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => {
             const taal = getTaal(c.taalId);
+            const maxLineMatras = Math.max(
+              0,
+              ...c.lines.map((line) => line.cells.length),
+            );
             return (
               <li key={c.id}>
                 <button
@@ -126,7 +130,7 @@ export function BrowsePanel({
                   <p className="mt-1 font-medium text-ink/80">{c.title}</p>
                   <p className="mt-2 text-xs text-ink/45">
                     {c.lines.length} line{c.lines.length !== 1 ? "s" : ""} ·{" "}
-                    {c.lines[0]?.cells.length ?? 0} matras
+                    {maxLineMatras} max matras
                   </p>
                 </button>
               </li>
