@@ -95,19 +95,13 @@ export function CompositionEditor({
     QuickInsertBol[]
   >(loadUserQuickInsertBols);
   const cellInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const lineContainerRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   const taal = useMemo(() => getTaal(taalId), [taalId]);
   const isKayda = kind === "kayda";
   const quickInsertBols = useMemo(
     () => mergeQuickInsertBols(COMMON_BOLS, userQuickInsertBols),
     [userQuickInsertBols],
-  );
-  const bulkImportResult = useMemo(
-    () =>
-      taal
-        ? parseBulkCompositionText(bulkImportText, taal, kind)
-        : { lines: [], tokenCount: 0, unknownBols: [], ignoredLines: [] },
-    [bulkImportText, kind, taal],
   );
   const activeLine =
     activeCell != null ? lines[activeCell.lineIndex] : undefined;
@@ -120,6 +114,60 @@ export function CompositionEditor({
           ? COMPOSITION_LINE_SECTION_LABELS[activeLine.section]
           : "Unsectioned"))
       : "";
+  const quickInsertScores = useMemo(() => {
+    const activeSectionKey = activeLine
+      ? `${activeLine.section ?? ""}|${activeLine.sectionTitle ?? ""}`
+      : "";
+    const sectionCounts = new Map<string, number>();
+    const compositionCounts = new Map<string, number>();
+
+    lines.forEach((line) => {
+      const lineSectionKey = `${line.section ?? ""}|${line.sectionTitle ?? ""}`;
+      line.cells.forEach((cell) => {
+        const bol = cell.devanagari.trim();
+        if (!bol) return;
+        compositionCounts.set(bol, (compositionCounts.get(bol) ?? 0) + 1);
+        if (lineSectionKey === activeSectionKey) {
+          sectionCounts.set(bol, (sectionCounts.get(bol) ?? 0) + 1);
+        }
+      });
+    });
+
+    return quickInsertBols.map((bol, index) => ({
+      bol,
+      index,
+      score:
+        (sectionCounts.get(bol.devanagari) ?? 0) * 100 +
+        (compositionCounts.get(bol.devanagari) ?? 0),
+    }));
+  }, [activeLine, lines, quickInsertBols]);
+  const suggestedQuickInsertBols = useMemo(
+    () =>
+      quickInsertScores
+        .filter((item) => item.score > 0)
+        .sort((a, b) => b.score - a.score || a.index - b.index)
+        .slice(0, 12)
+        .map((item) => item.bol),
+    [quickInsertScores],
+  );
+  const rankedQuickInsertBols = useMemo(
+    () =>
+      [...quickInsertScores]
+        .sort((a, b) => b.score - a.score || a.index - b.index)
+        .map((item) => item.bol),
+    [quickInsertScores],
+  );
+  const bulkImportResult = useMemo(
+    () =>
+      taal
+        ? parseBulkCompositionText(bulkImportText, taal, kind)
+        : { lines: [], tokenCount: 0, unknownBols: [], ignoredLines: [] },
+    [bulkImportText, kind, taal],
+  );
+  const unknownQuickInsertBols = useMemo(() => {
+    const existing = new Set(quickInsertBols.map((bol) => bol.devanagari));
+    return bulkImportResult.unknownBols.filter((bol) => !existing.has(bol));
+  }, [bulkImportResult.unknownBols, quickInsertBols]);
 
   const rememberActiveCell = (
     lineIndex: number,
@@ -161,6 +209,16 @@ export function CompositionEditor({
         selectionStart,
         selectionEnd,
       });
+    });
+  };
+
+  const scrollToLine = (lineIndex: number) => {
+    window.requestAnimationFrame(() => {
+      lineContainerRefs.current[lineIndex]?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      focusCell(lineIndex, 0, { selectAll: true });
     });
   };
 
@@ -245,7 +303,9 @@ export function CompositionEditor({
     section: CompositionLineSection = defaultSectionForKind(kind),
   ) => {
     if (!taal) return;
+    const nextLineIndex = lines.length;
     setLines((prev) => [...prev, createSectionLine(section)]);
+    scrollToLine(nextLineIndex);
   };
 
   const removeLine = (index: number) => {
@@ -311,9 +371,9 @@ export function CompositionEditor({
   };
 
   const addMissingBolsToQuickInsert = () => {
-    if (bulkImportResult.unknownBols.length === 0) return;
+    if (unknownQuickInsertBols.length === 0) return;
     const existing = new Set(quickInsertBols.map((bol) => bol.devanagari));
-    const additions = bulkImportResult.unknownBols
+    const additions = unknownQuickInsertBols
       .filter((bol) => !existing.has(bol))
       .map((bol) => ({
         devanagari: bol,
@@ -619,7 +679,7 @@ export function CompositionEditor({
               </span>
             </div>
 
-            {bulkImportResult.unknownBols.length > 0 && (
+            {unknownQuickInsertBols.length > 0 && (
               <div className="rounded-lg border border-saffron/40 bg-saffron/10 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-medium text-maroon">
@@ -634,8 +694,8 @@ export function CompositionEditor({
                   </button>
                 </div>
                 <p className="font-devanagari mt-1 text-sm text-ink/70">
-                  {bulkImportResult.unknownBols.slice(0, 24).join(" · ")}
-                  {bulkImportResult.unknownBols.length > 24 ? " · ..." : ""}
+                  {unknownQuickInsertBols.slice(0, 24).join(" · ")}
+                  {unknownQuickInsertBols.length > 24 ? " · ..." : ""}
                 </p>
               </div>
             )}
@@ -676,7 +736,8 @@ export function CompositionEditor({
       </div>
 
       {/* Quick-insert bols */}
-      <div className="sticky top-0 z-20 mb-6 rounded-lg border border-saffron/40 bg-parchment/95 p-3 shadow-md shadow-ink/10 backdrop-blur">
+      {activeMatraCell && (
+      <div className="fixed inset-x-3 bottom-3 z-30 max-h-[58vh] overflow-hidden rounded-lg border border-saffron/40 bg-parchment/95 p-3 shadow-xl shadow-ink/20 backdrop-blur lg:inset-auto lg:top-24 lg:right-4 lg:bottom-auto lg:w-80 lg:max-h-[calc(100vh-7rem)]">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="text-xs font-medium tracking-wide text-ink/60 uppercase">
@@ -689,15 +750,25 @@ export function CompositionEditor({
             </p>
           </div>
 
-          <label className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs text-ink/70">
-            <input
-              type="checkbox"
-              checked={advanceAfterInsert}
-              onChange={(e) => setAdvanceAfterInsert(e.target.checked)}
-              className="accent-maroon"
-            />
-            Advance after insert
-          </label>
+          <div className="flex flex-wrap gap-2">
+            <label className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs text-ink/70">
+              <input
+                type="checkbox"
+                checked={advanceAfterInsert}
+                onChange={(e) => setAdvanceAfterInsert(e.target.checked)}
+                className="accent-maroon"
+              />
+              Advance after insert
+            </label>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setActiveCell(null)}
+              className="rounded-full border border-ink/15 bg-white px-3 py-1.5 text-xs text-ink/60 hover:bg-ink/5"
+            >
+              Done
+            </button>
+          </div>
         </div>
 
         <div className="mb-2 flex flex-wrap gap-2">
@@ -764,21 +835,41 @@ export function CompositionEditor({
           ))}
         </div>
 
-        <div className="max-h-36 overflow-y-auto pr-1">
+        {suggestedQuickInsertBols.length > 0 && (
+          <div className="mb-2 border-b border-saffron/20 pb-2">
+            <p className="mb-1 text-[11px] font-medium tracking-wide text-ink/45 uppercase">
+              Suggested
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {suggestedQuickInsertBols.map(({ devanagari, latin }) => (
+                <button
+                  key={`suggested-${devanagari}`}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => insertBolIntoActiveCell(devanagari)}
+                  className="rounded-lg border border-saffron/50 bg-white px-3 py-2 text-sm text-maroon shadow-sm transition hover:bg-saffron/15"
+                  title={`Insert ${devanagari} into selected cell`}
+                >
+                  <span className="font-devanagari font-semibold">
+                    {devanagari}
+                  </span>{" "}
+                  <span className="text-maroon-light">({latin})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="max-h-40 overflow-y-auto pr-1 lg:max-h-[38vh]">
         <div className="flex flex-wrap gap-2">
-        {quickInsertBols.map(({ devanagari, latin }) => (
+        {rankedQuickInsertBols.map(({ devanagari, latin }) => (
           <button
             key={devanagari}
             type="button"
-            disabled={!activeMatraCell}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => insertBolIntoActiveCell(devanagari)}
-            className="rounded-lg border border-parchment-dark bg-white px-3 py-2 text-sm text-ink/70 shadow-sm transition hover:border-saffron hover:text-maroon disabled:cursor-not-allowed disabled:opacity-45"
-            title={
-              activeMatraCell
-                ? `Insert ${devanagari} into selected cell`
-                : "Select a matra cell first"
-            }
+            className="rounded-lg border border-parchment-dark bg-white px-3 py-2 text-sm text-ink/70 shadow-sm transition hover:border-saffron hover:text-maroon"
+            title={`Insert ${devanagari} into selected cell`}
           >
             <span className="font-devanagari font-semibold">{devanagari}</span>{" "}
             <span className="text-maroon-light">({latin})</span>
@@ -787,12 +878,16 @@ export function CompositionEditor({
         </div>
         </div>
       </div>
+      )}
 
-      <div className="space-y-8">
+      <div className={`space-y-8 ${activeMatraCell ? "pb-72 lg:pb-0" : ""}`}>
         {lines.map((line, lineIndex) => (
           <div
             key={lineIndex}
-            className="rounded-xl border border-parchment-dark bg-white/80 p-4"
+            ref={(node) => {
+              lineContainerRefs.current[lineIndex] = node;
+            }}
+            className="scroll-mt-32 rounded-xl border border-parchment-dark bg-white/80 p-4"
           >
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
