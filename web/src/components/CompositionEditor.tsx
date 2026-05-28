@@ -41,6 +41,14 @@ type ActiveCell = {
   selectionEnd: number;
 };
 
+type CellSelection = {
+  lineIndex: number;
+  anchorCellIndex: number;
+  focusCellIndex: number;
+};
+
+const PRAKAAR_REPEAT_CELL_INDICES = new Set([3, 4, 5, 6, 12, 13, 14, 15]);
+
 function createId(): string {
   return `comp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
@@ -51,6 +59,21 @@ function cellKey(lineIndex: number, cellIndex: number): string {
 
 function defaultSectionForKind(kind: CompositionKind): CompositionLineSection {
   return kind === "kayda" ? "kayda" : "other";
+}
+
+function normalizedSelection(selection: CellSelection): {
+  lineIndex: number;
+  startCellIndex: number;
+  endCellIndex: number;
+} {
+  return {
+    lineIndex: selection.lineIndex,
+    startCellIndex: Math.min(
+      selection.anchorCellIndex,
+      selection.focusCellIndex,
+    ),
+    endCellIndex: Math.max(selection.anchorCellIndex, selection.focusCellIndex),
+  };
 }
 
 function mergeQuickInsertBols(
@@ -89,6 +112,8 @@ export function CompositionEditor({
     ],
   );
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
+  const [cellSelection, setCellSelection] = useState<CellSelection | null>(null);
+  const [cellClipboard, setCellClipboard] = useState<string[]>([]);
   const [advanceAfterInsert, setAdvanceAfterInsert] = useState(true);
   const [bulkImportText, setBulkImportText] = useState("");
   const [userQuickInsertBols, setUserQuickInsertBols] = useState<
@@ -168,6 +193,12 @@ export function CompositionEditor({
     const existing = new Set(quickInsertBols.map((bol) => bol.devanagari));
     return bulkImportResult.unknownBols.filter((bol) => !existing.has(bol));
   }, [bulkImportResult.unknownBols, quickInsertBols]);
+  const selectedCellRange = cellSelection
+    ? normalizedSelection(cellSelection)
+    : null;
+  const selectedCellCount = selectedCellRange
+    ? selectedCellRange.endCellIndex - selectedCellRange.startCellIndex + 1
+    : 0;
 
   const rememberActiveCell = (
     lineIndex: number,
@@ -190,6 +221,7 @@ export function CompositionEditor({
       selectAll?: boolean;
       selectionStart?: number;
       selectionEnd?: number;
+      preserveCellSelection?: boolean;
     } = {},
   ) => {
     window.requestAnimationFrame(() => {
@@ -209,6 +241,31 @@ export function CompositionEditor({
         selectionStart,
         selectionEnd,
       });
+      if (!options.preserveCellSelection) {
+        setCellSelection({
+          lineIndex,
+          anchorCellIndex: cellIndex,
+          focusCellIndex: cellIndex,
+        });
+      }
+    });
+  };
+
+  const selectCell = (
+    lineIndex: number,
+    cellIndex: number,
+    extendSelection = false,
+  ) => {
+    setCellSelection((prev) => {
+      if (extendSelection && prev?.lineIndex === lineIndex) {
+        return { ...prev, focusCellIndex: cellIndex };
+      }
+
+      return {
+        lineIndex,
+        anchorCellIndex: cellIndex,
+        focusCellIndex: cellIndex,
+      };
     });
   };
 
@@ -220,6 +277,16 @@ export function CompositionEditor({
       });
       focusCell(lineIndex, 0, { selectAll: true });
     });
+  };
+
+  const isCellSelected = (lineIndex: number, cellIndex: number): boolean => {
+    if (!selectedCellRange || selectedCellRange.lineIndex !== lineIndex) {
+      return false;
+    }
+    return (
+      cellIndex >= selectedCellRange.startCellIndex &&
+      cellIndex <= selectedCellRange.endCellIndex
+    );
   };
 
   const getAdjacentCell = (
@@ -279,11 +346,33 @@ export function CompositionEditor({
   const createSectionLine = (
     section: CompositionLineSection = defaultSectionForKind(kind),
     sectionTitle = defaultSectionTitle(section),
-  ): CompositionLine => ({
-    ...newLineForTaal(taal!),
-    section,
-    sectionTitle: sectionTitle || undefined,
-  });
+    sourceLines: CompositionLine[] = lines,
+  ): CompositionLine => {
+    const baseLine: CompositionLine = {
+      ...newLineForTaal(taal!),
+      section,
+      sectionTitle: sectionTitle || undefined,
+    };
+
+    if (section !== "prakaar") return baseLine;
+
+    const previousPrakaar = [...sourceLines]
+      .reverse()
+      .find((line) => line.section === "prakaar");
+    if (!previousPrakaar) return baseLine;
+
+    return {
+      ...baseLine,
+      cells: baseLine.cells.map((cell, index) =>
+        PRAKAAR_REPEAT_CELL_INDICES.has(index % taal!.matras)
+          ? {
+              ...cell,
+              devanagari: previousPrakaar.cells[index]?.devanagari ?? "",
+            }
+          : cell,
+      ),
+    };
+  };
 
   const updateCell = (
     lineIndex: number,
@@ -304,7 +393,7 @@ export function CompositionEditor({
   ) => {
     if (!taal) return;
     const nextLineIndex = lines.length;
-    setLines((prev) => [...prev, createSectionLine(section)]);
+    setLines((prev) => [...prev, createSectionLine(section, undefined, prev)]);
     scrollToLine(nextLineIndex);
   };
 
@@ -409,6 +498,81 @@ export function CompositionEditor({
   const addMissingBolsToQuickInsert = () => {
     if (unknownQuickInsertBols.length === 0) return;
     learnBolsForQuickInsert(unknownQuickInsertBols);
+  };
+
+  const copySelectedCells = () => {
+    if (!selectedCellRange) return;
+    const sourceLine = lines[selectedCellRange.lineIndex];
+    if (!sourceLine) return;
+
+    setCellClipboard(
+      sourceLine.cells
+        .slice(
+          selectedCellRange.startCellIndex,
+          selectedCellRange.endCellIndex + 1,
+        )
+        .map((cell) => cell.devanagari),
+    );
+  };
+
+  const pasteClipboardAtActiveCell = () => {
+    if (!activeCell || cellClipboard.length === 0) return;
+    setLines((prev) => {
+      const next = [...prev];
+      const targetLine = next[activeCell.lineIndex];
+      if (!targetLine) return prev;
+
+      const cells = [...targetLine.cells];
+      cellClipboard.forEach((bol, offset) => {
+        const targetIndex = activeCell.cellIndex + offset;
+        if (!cells[targetIndex]) return;
+        cells[targetIndex] = {
+          ...cells[targetIndex],
+          devanagari: bol,
+        };
+      });
+      next[activeCell.lineIndex] = { ...targetLine, cells };
+      return next;
+    });
+    focusCell(
+      activeCell.lineIndex,
+      Math.min(
+        activeCell.cellIndex + cellClipboard.length,
+        (lines[activeCell.lineIndex]?.cells.length ?? 1) - 1,
+      ),
+      { selectAll: true },
+    );
+  };
+
+  const deleteSelectedCellsAndShiftLeft = () => {
+    if (!selectedCellRange) return;
+    const { lineIndex, startCellIndex, endCellIndex } = selectedCellRange;
+    const deleteCount = endCellIndex - startCellIndex + 1;
+
+    setLines((prev) => {
+      const next = [...prev];
+      const targetLine = next[lineIndex];
+      if (!targetLine) return prev;
+
+      const shiftedBols = targetLine.cells.map((cell) => cell.devanagari);
+      shiftedBols.splice(startCellIndex, deleteCount);
+      while (shiftedBols.length < targetLine.cells.length) shiftedBols.push("");
+
+      next[lineIndex] = {
+        ...targetLine,
+        cells: targetLine.cells.map((cell, index) => ({
+          ...cell,
+          devanagari: shiftedBols[index] ?? "",
+        })),
+      };
+      return next;
+    });
+
+    focusCell(
+      lineIndex,
+      Math.min(startCellIndex, (lines[lineIndex]?.cells.length ?? 1) - 1),
+      { selectAll: true },
+    );
   };
 
   const insertBolIntoActiveCell = (bol: string) => {
@@ -772,7 +936,7 @@ export function CompositionEditor({
             </p>
             <p className="text-xs text-ink/50">
               {activeMatraCell
-                ? `Selected: ${currentSectionLabel ? `${currentSectionLabel}, ` : ""}Line ${activeCell!.lineIndex + 1}, Matra ${activeCell!.cellIndex + 1}`
+                ? `Selected: ${currentSectionLabel ? `${currentSectionLabel}, ` : ""}Line ${activeCell!.lineIndex + 1}, ${selectedCellCount > 1 ? `${selectedCellCount} matras` : `Matra ${activeCell!.cellIndex + 1}`}`
                 : "Select a matra cell, then tap a bol."}
             </p>
           </div>
@@ -825,6 +989,33 @@ export function CompositionEditor({
             className="rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs text-red-700/70 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-45"
           >
             Clear cell
+          </button>
+          <button
+            type="button"
+            disabled={!selectedCellRange}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={copySelectedCells}
+            className="rounded-full border border-parchment-dark bg-white px-3 py-1.5 text-xs text-ink/70 hover:border-saffron disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            Copy {selectedCellCount > 1 ? `${selectedCellCount} cells` : "cell"}
+          </button>
+          <button
+            type="button"
+            disabled={!activeMatraCell || cellClipboard.length === 0}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={pasteClipboardAtActiveCell}
+            className="rounded-full border border-parchment-dark bg-white px-3 py-1.5 text-xs text-ink/70 hover:border-saffron disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            Paste {cellClipboard.length > 1 ? `${cellClipboard.length}` : ""}
+          </button>
+          <button
+            type="button"
+            disabled={!selectedCellRange}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={deleteSelectedCellsAndShiftLeft}
+            className="rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs text-red-700/70 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            Delete + shift
           </button>
         </div>
 
@@ -1072,20 +1263,35 @@ export function CompositionEditor({
                           }}
                           type="text"
                           value={cell.devanagari}
-                          onFocus={(e) =>
+                          onMouseDown={(e) => {
+                            if (!e.shiftKey) return;
+                            e.preventDefault();
+                            selectCell(lineIndex, cellIndex, true);
+                            focusCell(lineIndex, cellIndex, {
+                              selectAll: true,
+                              preserveCellSelection: true,
+                            });
+                          }}
+                          onFocus={(e) => {
+                            selectCell(lineIndex, cellIndex);
                             rememberActiveCell(
                               lineIndex,
                               cellIndex,
                               e.currentTarget,
-                            )
-                          }
-                          onClick={(e) =>
+                            );
+                          }}
+                          onClick={(e) => {
+                            if (e.shiftKey) {
+                              selectCell(lineIndex, cellIndex, true);
+                            } else {
+                              selectCell(lineIndex, cellIndex);
+                            }
                             rememberActiveCell(
                               lineIndex,
                               cellIndex,
                               e.currentTarget,
-                            )
-                          }
+                            );
+                          }}
                           onKeyUp={(e) =>
                             rememberActiveCell(
                               lineIndex,
@@ -1111,8 +1317,10 @@ export function CompositionEditor({
                             );
                           }}
                           className={`font-devanagari rounded border bg-white px-1 py-1.5 text-center text-lg font-semibold focus:border-saffron focus:ring-1 focus:ring-saffron/30 focus:outline-none ${
-                            activeCell?.lineIndex === lineIndex &&
-                            activeCell?.cellIndex === cellIndex
+                            isCellSelected(lineIndex, cellIndex)
+                              ? "border-maroon bg-saffron/10 ring-2 ring-saffron/40"
+                              : activeCell?.lineIndex === lineIndex &&
+                                  activeCell?.cellIndex === cellIndex
                               ? "border-saffron ring-1 ring-saffron/30"
                               : "border-parchment-dark"
                           }`}
