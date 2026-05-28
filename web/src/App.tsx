@@ -30,6 +30,12 @@ type Screen =
   | { name: "view"; id: string }
   | { name: "edit"; id?: string };
 
+type AppHistoryState = {
+  tablaVahiScreen: Screen;
+};
+
+const LIBRARY_SCREEN: Screen = { name: "browse" };
+
 function formatCloudError(error: unknown): string {
   const message = error instanceof Error ? error.message : "Unknown cloud error";
   const code =
@@ -63,6 +69,36 @@ export default function App() {
       ? "Cloud sync is enabled."
       : "Cloud not configured yet. Using browser storage only.",
   );
+
+  const navigateToScreen = useCallback(
+    (next: Screen, mode: "push" | "replace" = "push") => {
+      setScreen(next);
+      const state: AppHistoryState = { tablaVahiScreen: next };
+      if (mode === "replace") {
+        window.history.replaceState(state, "", window.location.href);
+      } else {
+        window.history.pushState(state, "", window.location.href);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    window.history.replaceState(
+      { tablaVahiScreen: LIBRARY_SCREEN } satisfies AppHistoryState,
+      "",
+      window.location.href,
+    );
+
+    const handleBrowserBack = () => {
+      setScreen(LIBRARY_SCREEN);
+    };
+
+    window.addEventListener("popstate", handleBrowserBack);
+    return () => {
+      window.removeEventListener("popstate", handleBrowserBack);
+    };
+  }, []);
 
   useEffect(() => {
     if (!cloudConfigured) {
@@ -170,7 +206,7 @@ export default function App() {
         undefined,
     };
     persist(upsertComposition(compositions, normalized));
-    setScreen({ name: "view", id: normalized.id });
+    navigateToScreen({ name: "view", id: normalized.id }, "replace");
   };
 
   const handleDelete = async (id: string) => {
@@ -195,7 +231,7 @@ export default function App() {
         setCloudBusy(false);
       }
     }
-    setScreen({ name: "browse" });
+    navigateToScreen(LIBRARY_SCREEN, "replace");
   };
 
   const handleMigrateNow = async () => {
@@ -248,7 +284,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => {
-                setScreen({ name: "browse" });
+                navigateToScreen(LIBRARY_SCREEN, "replace");
               }}
               className="font-devanagari text-lg font-bold text-maroon hover:opacity-80"
             >
@@ -292,8 +328,8 @@ export default function App() {
             onTaalChange={setSelectedTaalId}
             onKindChange={setSelectedKind}
             onSearchChange={setSearchQuery}
-            onSelect={(c) => setScreen({ name: "view", id: c.id })}
-            onAddNew={() => setScreen({ name: "edit" })}
+            onSelect={(c) => navigateToScreen({ name: "view", id: c.id })}
+            onAddNew={() => navigateToScreen({ name: "edit" })}
           />
         )}
 
@@ -304,9 +340,9 @@ export default function App() {
             canEdit={canEditActiveComposition}
             onEdit={() => {
               if (!canEditActiveComposition) return;
-              setScreen({ name: "edit", id: activeComposition.id });
+              navigateToScreen({ name: "edit", id: activeComposition.id });
             }}
-            onBack={() => setScreen({ name: "browse" })}
+            onBack={() => navigateToScreen(LIBRARY_SCREEN, "replace")}
           />
         )}
 
@@ -323,10 +359,11 @@ export default function App() {
             }
             onSave={handleSave}
             onCancel={() =>
-              setScreen(
+              navigateToScreen(
                 screen.id
                   ? { name: "view", id: screen.id }
                   : { name: "browse" },
+                "replace",
               )
             }
           />
