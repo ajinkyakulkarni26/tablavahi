@@ -53,7 +53,7 @@ type CellRange = {
   endCellIndex: number;
 };
 
-const PRAKAAR_REPEAT_CELL_INDICES = new Set([3, 4, 5, 6, 12, 13, 14, 15]);
+const PRAKAAR_REPEAT_CELL_INDICES = new Set([4, 5, 6, 7, 12, 13, 14, 15]);
 
 function createId(): string {
   return `comp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
