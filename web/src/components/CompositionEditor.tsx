@@ -950,7 +950,7 @@ export function CompositionEditor({
 
       {/* Quick-insert bols */}
       {activeMatraCell && (
-      <div className="fixed inset-x-3 bottom-3 z-30 max-h-[58vh] overflow-hidden rounded-lg border border-saffron/40 bg-parchment/95 p-3 shadow-xl shadow-ink/20 backdrop-blur lg:inset-auto lg:top-24 lg:right-4 lg:bottom-auto lg:w-80 lg:max-h-[calc(100vh-7rem)]">
+      <div className="fixed inset-x-3 bottom-3 z-30 flex max-h-[58vh] flex-col overflow-hidden rounded-lg border border-saffron/40 bg-parchment/95 p-3 shadow-xl shadow-ink/20 backdrop-blur lg:inset-auto lg:top-24 lg:right-4 lg:bottom-auto lg:w-80 lg:max-h-[calc(100vh-7rem)]">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="text-xs font-medium tracking-wide text-ink/60 uppercase">
@@ -1105,18 +1105,18 @@ export function CompositionEditor({
         </div>
 
         {suggestedQuickInsertBols.length > 0 && (
-          <div className="mb-2 border-b border-saffron/20 pb-2">
+          <div className="mb-2 shrink-0 border-b border-saffron/20 pb-2">
             <p className="mb-1 text-[11px] font-medium tracking-wide text-ink/45 uppercase">
               Suggested
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1 lg:max-h-36">
               {suggestedQuickInsertBols.map(({ devanagari, latin }) => (
                 <button
                   key={`suggested-${devanagari}`}
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => insertBolIntoActiveCell(devanagari)}
-                  className="rounded-lg border border-saffron/50 bg-white px-3 py-2 text-sm text-maroon shadow-sm transition hover:bg-saffron/15"
+                  className="rounded-lg border border-saffron/50 bg-white px-3 py-1.5 text-sm text-maroon shadow-sm transition hover:bg-saffron/15"
                   title={`Insert ${devanagari} into selected cell`}
                 >
                   <span className="font-devanagari font-semibold">
@@ -1129,7 +1129,7 @@ export function CompositionEditor({
           </div>
         )}
 
-        <div className="max-h-40 overflow-y-auto pr-1 lg:max-h-[38vh]">
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
         <div className="flex flex-wrap gap-2">
         {rankedQuickInsertBols.map(({ devanagari, latin }) => (
           <button
