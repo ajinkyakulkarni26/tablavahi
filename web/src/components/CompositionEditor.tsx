@@ -79,6 +79,12 @@ function isDefaultMainSectionTitle(title: string | undefined): boolean {
   return !title || title === "Main Kayda" || title === "Main Rela";
 }
 
+function supportsLineCycleCount(
+  section: CompositionLineSection | undefined,
+): boolean {
+  return section === "prakaar" || section === "tihai";
+}
+
 function defaultSectionForKind(kind: CompositionKind): CompositionLineSection {
   return supportsVariationSections(kind) ? "kayda" : "other";
 }
@@ -376,17 +382,18 @@ export function CompositionEditor({
     sectionTitle = defaultSectionTitle(section),
     sourceLines: CompositionLine[] = lines,
   ): CompositionLine => {
+    const previousPrakaar =
+      section === "prakaar"
+        ? [...sourceLines].reverse().find((line) => line.section === "prakaar")
+        : undefined;
+    const cellCount = previousPrakaar?.cells.length ?? taal!.matras;
     const baseLine: CompositionLine = {
-      ...newLineForTaal(taal!),
+      cells: applyTaalMarkers(emptyLine(cellCount), taal!),
       section,
       sectionTitle: sectionTitle || undefined,
     };
 
     if (section !== "prakaar") return baseLine;
-
-    const previousPrakaar = [...sourceLines]
-      .reverse()
-      .find((line) => line.section === "prakaar");
     if (!previousPrakaar) return baseLine;
 
     return {
@@ -835,7 +842,7 @@ export function CompositionEditor({
           <p className="font-medium text-maroon">{layoutName} layout</p>
           <p className="mt-1">
             Start with Main {layoutName}, add each variation as Prakar 1, Prakar 2, and finish
-            with Tihai. Lines with the same section title display together.
+            with Tihai. Prakar and Tihai lines can extend to 2, 3, or more taal cycles.
           </p>
         </div>
       )}
@@ -847,8 +854,8 @@ export function CompositionEditor({
               Paste full composition
             </p>
             <p className="text-xs text-ink/50">
-              Space-separated bols are converted into {taal.matras}-matra grid lines.
-              Use append when adding one Prakar or Tihai to existing work.
+              Main lines are grouped by {taal.matras} matras. Prakar and Tihai
+              pasted lines can stay longer as 2, 3, or more taal cycles.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -898,7 +905,7 @@ export function CompositionEditor({
                 {bulkImportResult.lines.length} grid lines
               </span>
               <span className="rounded-full bg-parchment-dark px-3 py-1">
-                {taal.matras} matras per line
+                {taal.matras}+ matras per line
               </span>
             </div>
 
@@ -1187,7 +1194,7 @@ export function CompositionEditor({
                       className="min-w-0 rounded-full border border-parchment-dark bg-white px-3 py-1 text-xs text-ink/70"
                       placeholder="Section title"
                     />
-                    {line.section === "tihai" && (
+                    {supportsLineCycleCount(line.section) && (
                       <label className="flex items-center gap-1 rounded-full border border-parchment-dark bg-white px-3 py-1 text-xs text-ink/70">
                         <span>Length</span>
                         <select
@@ -1200,11 +1207,21 @@ export function CompositionEditor({
                           }
                           className="bg-transparent font-medium text-maroon focus:outline-none"
                         >
-                          {[1, 2, 3, 4, 5, 6].map((cycles) => (
-                            <option key={cycles} value={cycles}>
-                              {taal.matras * cycles} matras
-                            </option>
-                          ))}
+                          {Array.from(
+                            new Set([
+                              ...Array.from({ length: 8 }, (_, i) => i + 1),
+                              Math.max(
+                                1,
+                                Math.ceil(line.cells.length / taal.matras),
+                              ),
+                            ]),
+                          )
+                            .sort((a, b) => a - b)
+                            .map((cycles) => (
+                              <option key={cycles} value={cycles}>
+                                {taal.matras * cycles} matras
+                              </option>
+                            ))}
                         </select>
                       </label>
                     )}

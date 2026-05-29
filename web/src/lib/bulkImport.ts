@@ -129,7 +129,8 @@ function createImportedLine(
   section: CompositionLineSection,
   sectionTitle: string | undefined,
 ): CompositionLine {
-  const lineLength = Math.max(taal.matras, tokens.length);
+  const lineLength =
+    Math.max(1, Math.ceil(tokens.length / taal.matras)) * taal.matras;
   const cells = emptyLine(lineLength).map((cell, index) => ({
     ...cell,
     devanagari: tokens[index] ?? "",
@@ -194,7 +195,7 @@ export function parseBulkCompositionText(
       if (!QUICK_INSERT_BOLS.has(token)) unknownBols.add(token);
     });
 
-    if (currentSection === "tihai") {
+    if (currentSection === "prakaar" || currentSection === "tihai") {
       lines.push(
         createImportedLine(
           tokens,
