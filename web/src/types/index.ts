@@ -1,10 +1,10 @@
-/** Sam (X), Khali (0), Taali (1, 2, 3 …) markers above matras */
+/** Sam (X), Khali (0), Taali (1, 2, 3 …) markers below bols */
 export type BeatMarker = "sam" | "khali" | "taali";
 
 export interface MatraCell {
   /** Bol in Marathi (Devanagari script), e.g. धा */
   devanagari: string;
-  /** Optional beat marker shown above this matra */
+  /** Optional beat marker shown below this bol */
   marker?: BeatMarker;
   /** For taali: which clap number (1, 2, 3 …) */
   taaliNumber?: number;
@@ -14,7 +14,7 @@ export type CompositionLineSection = "kayda" | "prakaar" | "tihai" | "other";
 
 export interface CompositionLine {
   cells: MatraCell[];
-  /** Optional structural section, useful for Kayda -> Prakar -> Tihai layout */
+  /** Optional structural section, useful for Kayda/Rela -> Prakar -> Tihai layout */
   section?: CompositionLineSection;
   /** Optional visible section name, e.g. Prakar 1 */
   sectionTitle?: string;

@@ -37,11 +37,13 @@ const STANDALONE_ANNOTATIONS = new Set([
 ]);
 
 function defaultSectionForKind(kind: CompositionKind): CompositionLineSection {
-  return kind === "kayda" ? "kayda" : "other";
+  return kind === "kayda" || kind === "rela" ? "kayda" : "other";
 }
 
 function defaultSectionTitleForKind(kind: CompositionKind): string | undefined {
-  return kind === "kayda" ? "Main Kayda" : undefined;
+  if (kind === "kayda") return "Main Kayda";
+  if (kind === "rela") return "Main Rela";
+  return undefined;
 }
 
 function cleanToken(token: string): string {
@@ -66,12 +68,22 @@ function detectSectionHeading(
   const trimmed = line.trim().replace(/[:：]+$/g, "");
   const lower = trimmed.toLowerCase().replace(/\s+/g, " ");
 
-  if (
-    kind === "kayda" &&
-    (/^(main\s+)?kayda$/.test(lower) ||
-      ["कायदा", "मुख्य कायदा", "मूळ कायदा"].includes(trimmed))
-  ) {
-    return { section: "kayda", title: "Main Kayda" };
+  if (kind === "kayda") {
+    if (
+      /^(main\s+)?kayda$/.test(lower) ||
+      ["कायदा", "मुख्य कायदा", "मूळ कायदा"].includes(trimmed)
+    ) {
+      return { section: "kayda", title: "Main Kayda" };
+    }
+  }
+
+  if (kind === "rela") {
+    if (
+      /^(main\s+)?rela$/.test(lower) ||
+      ["रेला", "मुख्य रेला", "मूळ रेला"].includes(trimmed)
+    ) {
+      return { section: "kayda", title: "Main Rela" };
+    }
   }
 
   if (/^(prakar|prakaar)(\s+[0-9]+)?$/.test(lower)) {

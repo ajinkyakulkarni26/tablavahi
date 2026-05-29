@@ -63,8 +63,24 @@ function cellKey(lineIndex: number, cellIndex: number): string {
   return `${lineIndex}-${cellIndex}`;
 }
 
+function supportsVariationSections(kind: CompositionKind): boolean {
+  return kind === "kayda" || kind === "rela";
+}
+
+function mainSectionTitleForKind(kind: CompositionKind): string {
+  return kind === "rela" ? "Main Rela" : "Main Kayda";
+}
+
+function layoutNameForKind(kind: CompositionKind): string {
+  return kind === "rela" ? "Rela" : "Kayda";
+}
+
+function isDefaultMainSectionTitle(title: string | undefined): boolean {
+  return !title || title === "Main Kayda" || title === "Main Rela";
+}
+
 function defaultSectionForKind(kind: CompositionKind): CompositionLineSection {
-  return kind === "kayda" ? "kayda" : "other";
+  return supportsVariationSections(kind) ? "kayda" : "other";
 }
 
 function normalizedSelection(selection: CellSelection): CellRange {
@@ -96,8 +112,9 @@ export function CompositionEditor({
   onSave,
   onCancel,
 }: CompositionEditorProps) {
+  const initialKind = initial?.kind ?? "kayda";
   const [taalId, setTaalId] = useState(initial?.taalId ?? "teentaal");
-  const [kind, setKind] = useState<CompositionKind>(initial?.kind ?? "kayda");
+  const [kind, setKind] = useState<CompositionKind>(initialKind);
   const [title, setTitle] = useState(initial?.title ?? "");
   const [titleDevanagari, setTitleDevanagari] = useState(
     initial?.titleDevanagari ?? "",
@@ -109,7 +126,7 @@ export function CompositionEditor({
       {
         ...newLineForTaal(getTaal("teentaal")!),
         section: "kayda",
-        sectionTitle: "Main Kayda",
+        sectionTitle: mainSectionTitleForKind(initialKind),
       },
     ],
   );
@@ -129,7 +146,9 @@ export function CompositionEditor({
   const lineContainerRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   const taal = useMemo(() => getTaal(taalId), [taalId]);
-  const isKayda = kind === "kayda";
+  const hasVariationSections = supportsVariationSections(kind);
+  const layoutName = layoutNameForKind(kind);
+  const mainSectionTitle = mainSectionTitleForKind(kind);
   const quickInsertBols = useMemo(
     () => mergeQuickInsertBols(COMMON_BOLS, userQuickInsertBols),
     [userQuickInsertBols],
@@ -340,7 +359,7 @@ export function CompositionEditor({
   const defaultSectionTitle = (section: CompositionLineSection): string => {
     switch (section) {
       case "kayda":
-        return "Main Kayda";
+        return mainSectionTitle;
       case "prakaar":
         return `Prakar ${countSection("prakaar") + 1}`;
       case "tihai":
@@ -721,14 +740,15 @@ export function CompositionEditor({
             onChange={(e) => {
               const nextKind = e.target.value as CompositionKind;
               setKind(nextKind);
-              if (nextKind === "kayda") {
+              if (supportsVariationSections(nextKind)) {
                 setLines((prev) =>
                   prev.map((line, index) => ({
                     ...line,
                     section: line.section ?? (index === 0 ? "kayda" : "prakaar"),
                     sectionTitle:
-                      line.sectionTitle ??
-                      (index === 0 ? "Main Kayda" : `Prakar ${index}`),
+                      index === 0 && isDefaultMainSectionTitle(line.sectionTitle)
+                        ? mainSectionTitleForKind(nextKind)
+                        : (line.sectionTitle ?? `Prakar ${index}`),
                   })),
                 );
               }
@@ -775,14 +795,14 @@ export function CompositionEditor({
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <p className="font-devanagari text-sm text-ink/70">{mr.editorHint}</p>
-        {isKayda ? (
+        {hasVariationSections ? (
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => addLine("kayda")}
               className="rounded-full bg-saffron px-4 py-1.5 text-sm font-medium text-ink shadow-sm hover:bg-saffron-dark"
             >
-              + Main Kayda
+              + Main {layoutName}
             </button>
             <button
               type="button"
@@ -810,11 +830,11 @@ export function CompositionEditor({
         )}
       </div>
 
-      {isKayda && (
+      {hasVariationSections && (
         <div className="mb-4 rounded-lg border border-parchment-dark bg-white/70 p-3 text-sm text-ink/65">
-          <p className="font-medium text-maroon">Kayda layout</p>
+          <p className="font-medium text-maroon">{layoutName} layout</p>
           <p className="mt-1">
-            Start with Main Kayda, add each variation as Prakar 1, Prakar 2, and finish
+            Start with Main {layoutName}, add each variation as Prakar 1, Prakar 2, and finish
             with Tihai. Lines with the same section title display together.
           </p>
         </div>
@@ -864,7 +884,7 @@ export function CompositionEditor({
           onChange={(e) => setBulkImportText(e.target.value)}
           rows={7}
           className="font-devanagari w-full rounded-lg border border-parchment-dark bg-parchment px-3 py-2 text-base leading-8 text-ink focus:border-saffron focus:ring-1 focus:ring-saffron/30 focus:outline-none"
-          placeholder={`Main Kayda\nधा धा धा धा धा धा धा न | तिट धा धा धा धा धा धा न\n\nPrakar 1\nधा धिं धा धा धा धिं धा न | तिट धा धिं धा धा धिं धा न\n\nTihai\nधा धा धा गे ना ती ना`}
+          placeholder={`${mainSectionTitle}\nधा धा धा धा धा धा धा न | तिट धा धा धा धा धा धा न\n\nPrakar 1\nधा धिं धा धा धा धिं धा न | तिट धा धिं धा धा धिं धा न\n\nTihai\nधा धा धा गे ना ती ना`}
           lang="mr"
         />
 
@@ -1132,7 +1152,7 @@ export function CompositionEditor({
                 <span className="text-sm font-medium text-maroon">
                   Line {lineIndex + 1}
                 </span>
-                {isKayda && (
+                {hasVariationSections && (
                   <>
                     <select
                       value={line.section ?? "other"}
@@ -1150,7 +1170,9 @@ export function CompositionEditor({
                         COMPOSITION_LINE_SECTION_LABELS,
                       ) as CompositionLineSection[]).map((section) => (
                         <option key={section} value={section}>
-                          {COMPOSITION_LINE_SECTION_LABELS[section]}
+                          {section === "kayda"
+                            ? `Main ${layoutName}`
+                            : COMPOSITION_LINE_SECTION_LABELS[section]}
                         </option>
                       ))}
                     </select>

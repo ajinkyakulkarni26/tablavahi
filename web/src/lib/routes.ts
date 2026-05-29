@@ -99,10 +99,14 @@ export function compositionIdFromSlug(segment: string): string | undefined {
   return undefined;
 }
 
-function lineSectionLabel(line: CompositionLine): string {
-  return line.section
-    ? (line.sectionTitle?.trim() || COMPOSITION_LINE_SECTION_LABELS[line.section])
-    : "";
+function lineSectionLabel(
+  line: CompositionLine,
+  mainSectionLabel = COMPOSITION_LINE_SECTION_LABELS.kayda,
+): string {
+  if (!line.section) return "";
+  if (line.sectionTitle?.trim()) return line.sectionTitle.trim();
+  if (line.section === "kayda") return mainSectionLabel;
+  return COMPOSITION_LINE_SECTION_LABELS[line.section];
 }
 
 export function sectionAnchorId(label: string, occurrence = 1): string {
@@ -110,12 +114,16 @@ export function sectionAnchorId(label: string, occurrence = 1): string {
   return occurrence > 1 ? `${slug}-${occurrence}` : slug;
 }
 
-export function compositionLineSectionAnchors(lines: CompositionLine[]): string[] {
+export function compositionLineSectionAnchors(
+  lines: CompositionLine[],
+  mainSectionLabel?: string,
+): string[] {
   const seen = new Map<string, number>();
 
   return lines.map((line, index) => {
-    const label = lineSectionLabel(line);
-    const previousLabel = index > 0 ? lineSectionLabel(lines[index - 1]) : "";
+    const label = lineSectionLabel(line, mainSectionLabel);
+    const previousLabel =
+      index > 0 ? lineSectionLabel(lines[index - 1], mainSectionLabel) : "";
     if (!label || label === previousLabel) return "";
 
     const occurrence = (seen.get(label) ?? 0) + 1;
@@ -126,10 +134,11 @@ export function compositionLineSectionAnchors(lines: CompositionLine[]): string[
 
 export function compositionSectionLinks(
   lines: CompositionLine[],
+  mainSectionLabel?: string,
 ): { id: string; label: string }[] {
-  const anchors = compositionLineSectionAnchors(lines);
+  const anchors = compositionLineSectionAnchors(lines, mainSectionLabel);
   return anchors.flatMap((id, index) => {
     if (!id) return [];
-    return [{ id, label: lineSectionLabel(lines[index]) }];
+    return [{ id, label: lineSectionLabel(lines[index], mainSectionLabel) }];
   });
 }

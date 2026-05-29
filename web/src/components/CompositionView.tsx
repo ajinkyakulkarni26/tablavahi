@@ -22,7 +22,12 @@ export function CompositionView({
   onBack,
 }: CompositionViewProps) {
   const taal = getTaal(composition.taalId);
-  const sectionLinks = compositionSectionLinks(composition.lines);
+  const mainSectionLabel =
+    composition.kind === "rela" ? "Main Rela" : "Main Kayda";
+  const sectionLinks = compositionSectionLinks(
+    composition.lines,
+    mainSectionLabel,
+  );
 
   useEffect(() => {
     const sectionId = window.location.hash.slice(1);
@@ -96,7 +101,12 @@ export function CompositionView({
       )}
 
       <div className="mt-8 rounded-2xl border border-parchment-dark bg-white/80 p-6 shadow-sm md:p-10">
-        <BolGrid lines={composition.lines} taal={taal} displayMode={displayMode} />
+        <BolGrid
+          lines={composition.lines}
+          taal={taal}
+          displayMode={displayMode}
+          mainSectionLabel={mainSectionLabel}
+        />
       </div>
 
       {composition.notes && (

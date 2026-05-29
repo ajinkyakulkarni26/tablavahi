@@ -11,6 +11,7 @@ interface BolGridProps {
   /** Highlight vibhag boundaries */
   showVibhag?: boolean;
   compact?: boolean;
+  mainSectionLabel?: string;
 }
 
 export function BolGrid({
@@ -19,20 +20,28 @@ export function BolGrid({
   displayMode,
   showVibhag = true,
   compact = false,
+  mainSectionLabel = COMPOSITION_LINE_SECTION_LABELS.kayda,
 }: BolGridProps) {
-  const sectionAnchorIds = compositionLineSectionAnchors(lines);
+  const sectionAnchorIds = compositionLineSectionAnchors(
+    lines,
+    mainSectionLabel,
+  );
 
   return (
     <div className="space-y-3">
       {lines.map((line, lineIndex) => {
         const sectionLabel = line.section
           ? (line.sectionTitle?.trim() ||
-            COMPOSITION_LINE_SECTION_LABELS[line.section])
+            (line.section === "kayda"
+              ? mainSectionLabel
+              : COMPOSITION_LINE_SECTION_LABELS[line.section]))
           : "";
         const previousLine = lines[lineIndex - 1];
         const previousSectionLabel = previousLine?.section
           ? (previousLine.sectionTitle?.trim() ||
-            COMPOSITION_LINE_SECTION_LABELS[previousLine.section])
+            (previousLine.section === "kayda"
+              ? mainSectionLabel
+              : COMPOSITION_LINE_SECTION_LABELS[previousLine.section]))
           : "";
         const showSectionHeader =
           Boolean(sectionLabel) && sectionLabel !== previousSectionLabel;
