@@ -80,9 +80,10 @@ function isDefaultMainSectionTitle(title: string | undefined): boolean {
 }
 
 function supportsLineCycleCount(
+  kind: CompositionKind,
   section: CompositionLineSection | undefined,
 ): boolean {
-  return section === "prakaar" || section === "tihai";
+  return kind === "chakradar" || section === "prakaar" || section === "tihai";
 }
 
 function normalizeQuickInsertSearch(value: string): string {
@@ -891,8 +892,9 @@ export function CompositionEditor({
               Paste full composition
             </p>
             <p className="text-xs text-ink/50">
-              Main lines are grouped by {taal.matras} matras. Prakar and Tihai
-              pasted lines can stay longer as 2, 3, or more taal cycles.
+              {kind === "chakradar"
+                ? "Chakradar pasted lines can stay longer as 2, 3, or more taal cycles."
+                : `Main lines are grouped by ${taal.matras} matras. Prakar and Tihai pasted lines can stay longer as 2, 3, or more taal cycles.`}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -1251,38 +1253,38 @@ export function CompositionEditor({
                       className="min-w-0 rounded-full border border-parchment-dark bg-white px-3 py-1 text-xs text-ink/70"
                       placeholder="Section title"
                     />
-                    {supportsLineCycleCount(line.section) && (
-                      <label className="flex items-center gap-1 rounded-full border border-parchment-dark bg-white px-3 py-1 text-xs text-ink/70">
-                        <span>Length</span>
-                        <select
-                          value={Math.max(
+                  </>
+                )}
+                {supportsLineCycleCount(kind, line.section) && (
+                  <label className="flex items-center gap-1 rounded-full border border-parchment-dark bg-white px-3 py-1 text-xs text-ink/70">
+                    <span>Length</span>
+                    <select
+                      value={Math.max(
+                        1,
+                        Math.ceil(line.cells.length / taal.matras),
+                      )}
+                      onChange={(e) =>
+                        setLineCycleCount(lineIndex, Number(e.target.value))
+                      }
+                      className="bg-transparent font-medium text-maroon focus:outline-none"
+                    >
+                      {Array.from(
+                        new Set([
+                          ...Array.from({ length: 8 }, (_, i) => i + 1),
+                          Math.max(
                             1,
                             Math.ceil(line.cells.length / taal.matras),
-                          )}
-                          onChange={(e) =>
-                            setLineCycleCount(lineIndex, Number(e.target.value))
-                          }
-                          className="bg-transparent font-medium text-maroon focus:outline-none"
-                        >
-                          {Array.from(
-                            new Set([
-                              ...Array.from({ length: 8 }, (_, i) => i + 1),
-                              Math.max(
-                                1,
-                                Math.ceil(line.cells.length / taal.matras),
-                              ),
-                            ]),
-                          )
-                            .sort((a, b) => a - b)
-                            .map((cycles) => (
-                              <option key={cycles} value={cycles}>
-                                {taal.matras * cycles} matras
-                              </option>
-                            ))}
-                        </select>
-                      </label>
-                    )}
-                  </>
+                          ),
+                        ]),
+                      )
+                        .sort((a, b) => a - b)
+                        .map((cycles) => (
+                          <option key={cycles} value={cycles}>
+                            {taal.matras * cycles} matras
+                          </option>
+                        ))}
+                    </select>
+                  </label>
                 )}
               </div>
               <div className="flex flex-wrap gap-2">

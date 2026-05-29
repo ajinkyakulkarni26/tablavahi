@@ -195,7 +195,11 @@ export function parseBulkCompositionText(
       if (!QUICK_INSERT_BOLS.has(token)) unknownBols.add(token);
     });
 
-    if (currentSection === "prakaar" || currentSection === "tihai") {
+    if (
+      kind === "chakradar" ||
+      currentSection === "prakaar" ||
+      currentSection === "tihai"
+    ) {
       lines.push(
         createImportedLine(
           tokens,
