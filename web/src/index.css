@@ -10,6 +10,8 @@
   --color-parchment-dark: var(--tv-parchment-dark, #f0e8d8);
   --color-maroon: var(--tv-maroon, #6b2d2d);
   --color-maroon-light: var(--tv-maroon-light, #8f4545);
+  --color-raga: var(--tv-raga, #24505a);
+  --color-copper: var(--tv-copper, #b26732);
 }
 
 html {
@@ -19,6 +21,8 @@ html {
 body {
   @apply antialiased;
   font-family: var(--font-serif);
+  background: var(--tv-parchment);
+  color: var(--tv-ink);
 }
 
 .font-devanagari {
@@ -33,4 +37,42 @@ html {
   --tv-parchment-dark: #f0e8d8;
   --tv-maroon: #6b2d2d;
   --tv-maroon-light: #8f4545;
+  --tv-raga: #24505a;
+  --tv-copper: #b26732;
+}
+
+.music-page {
+  background:
+    linear-gradient(90deg, rgba(36, 80, 90, 0.055) 1px, transparent 1px),
+    repeating-linear-gradient(
+      0deg,
+      rgba(107, 45, 45, 0.055) 0,
+      rgba(107, 45, 45, 0.055) 1px,
+      transparent 1px,
+      transparent 34px
+    ),
+    var(--tv-parchment);
+  background-size: 96px 96px, 100% 136px, auto;
+}
+
+.music-hero {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 28px,
+      rgba(232, 168, 56, 0.14) 28px,
+      rgba(232, 168, 56, 0.14) 30px
+    ),
+    linear-gradient(120deg, rgba(36, 80, 90, 0.96), rgba(26, 20, 16, 0.98) 48%, rgba(107, 45, 45, 0.96));
+}
+
+.rhythm-rule {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(232, 168, 56, 0.45) 0,
+    rgba(232, 168, 56, 0.45) 2px,
+    transparent 2px,
+    transparent 3.5rem
+  );
 }

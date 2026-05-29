@@ -404,10 +404,10 @@ export default function App() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="music-page flex min-h-screen flex-col">
       <DedicationBanner />
 
-      <header className="border-b border-parchment-dark bg-white/50 px-4 py-3">
+      <header className="sticky top-0 z-20 border-b border-parchment-dark/80 bg-parchment/90 px-4 py-3 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-3">
             <button
@@ -415,7 +415,7 @@ export default function App() {
               onClick={() => {
                 navigateToBrowse("all", "all", "replace");
               }}
-              className="font-devanagari text-lg font-bold text-maroon hover:opacity-80"
+              className="font-devanagari text-lg font-bold text-maroon hover:text-raga"
             >
               {mr.appTitle}
             </button>
@@ -436,8 +436,8 @@ export default function App() {
                 onClick={() => setDisplayMode(mode)}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                   displayMode === mode
-                    ? "bg-maroon text-parchment"
-                    : "bg-parchment-dark text-ink/70 hover:bg-saffron/30"
+                    ? "bg-raga text-parchment shadow-sm"
+                    : "bg-white text-ink/70 ring-1 ring-parchment-dark hover:bg-saffron/20"
                 }`}
               >
                 {label}
@@ -567,7 +567,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="border-t border-parchment-dark bg-white/40 px-4 py-4 text-center text-xs text-ink/45">
+      <footer className="border-t border-parchment-dark bg-parchment/80 px-4 py-4 text-center text-xs text-ink/45 backdrop-blur">
         <CloudSyncPanel
           configured={cloudConfigured}
           busy={cloudBusy}

@@ -40,13 +40,15 @@ export function BrowsePanel({
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-3 rounded-xl border border-parchment-dark bg-white/70 p-4 md:flex-row md:items-end">
+      <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-parchment-dark/90 bg-parchment/85 p-4 shadow-sm backdrop-blur md:flex-row md:items-end">
         <label className="flex-1">
-          <span className="text-xs font-medium text-ink/50 uppercase">Taal</span>
+          <span className="text-xs font-semibold tracking-wide text-raga uppercase">
+            Taal
+          </span>
           <select
             value={selectedTaalId}
             onChange={(e) => onTaalChange(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-parchment-dark bg-parchment px-3 py-2"
+            className="mt-1 w-full rounded-lg border border-parchment-dark bg-white px-3 py-2 shadow-inner"
           >
             <option value="all">All taals</option>
             {TAALS.map((t) => (
@@ -58,13 +60,15 @@ export function BrowsePanel({
         </label>
 
         <label className="flex-1">
-          <span className="text-xs font-medium text-ink/50 uppercase">Type</span>
+          <span className="text-xs font-semibold tracking-wide text-raga uppercase">
+            Type
+          </span>
           <select
             value={selectedKind}
             onChange={(e) =>
               onKindChange(e.target.value as CompositionKind | "all")
             }
-            className="mt-1 w-full rounded-lg border border-parchment-dark bg-parchment px-3 py-2"
+            className="mt-1 w-full rounded-lg border border-parchment-dark bg-white px-3 py-2 shadow-inner"
           >
             <option value="all">All types</option>
             {(Object.keys(COMPOSITION_KIND_LABELS) as CompositionKind[]).map(
@@ -78,13 +82,15 @@ export function BrowsePanel({
         </label>
 
         <label className="flex-[1.5]">
-          <span className="text-xs font-medium text-ink/50 uppercase">Search</span>
+          <span className="text-xs font-semibold tracking-wide text-raga uppercase">
+            Search
+          </span>
           <input
             type="search"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="e.g. Teentaal Kayda"
-            className="mt-1 w-full rounded-lg border border-parchment-dark bg-parchment px-3 py-2"
+            className="mt-1 w-full rounded-lg border border-parchment-dark bg-white px-3 py-2 shadow-inner"
           />
         </label>
       </div>
@@ -93,7 +99,7 @@ export function BrowsePanel({
         <button
           type="button"
           onClick={onAddNew}
-          className="rounded-full bg-maroon px-6 py-2.5 font-medium text-parchment shadow-md hover:bg-maroon-light"
+          className="rounded-full bg-raga px-6 py-2.5 font-medium text-parchment shadow-md transition hover:bg-maroon"
         >
           + Add composition
         </button>
@@ -116,14 +122,19 @@ export function BrowsePanel({
                 <button
                   type="button"
                   onClick={() => onSelect(c)}
-                  className="group w-full rounded-xl border border-parchment-dark bg-white/80 p-5 text-left shadow-sm transition hover:border-saffron/50 hover:shadow-md"
+                  className="group h-full w-full rounded-xl border border-parchment-dark border-t-4 border-t-saffron bg-white/90 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-raga/30 hover:shadow-lg"
                 >
-                  <span className="text-xs font-medium tracking-wide text-saffron-dark uppercase">
-                    {COMPOSITION_KIND_LABELS[c.kind]}
-                    {taal && ` · ${taal.name}`}
-                  </span>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-semibold tracking-wide text-copper uppercase">
+                      {COMPOSITION_KIND_LABELS[c.kind]}
+                      {taal && ` · ${taal.name}`}
+                    </span>
+                    <span className="font-devanagari text-xs font-semibold tracking-[0.22em] text-raga/45">
+                      × 2 ० 3
+                    </span>
+                  </div>
                   {c.titleDevanagari && (
-                    <p className="font-devanagari mt-2 text-xl font-bold text-ink group-hover:text-maroon">
+                    <p className="font-devanagari mt-3 text-xl font-bold text-ink group-hover:text-maroon">
                       {c.titleDevanagari}
                     </p>
                   )}

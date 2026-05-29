@@ -100,7 +100,7 @@ export function CompositionView({
         </nav>
       )}
 
-      <div className="mt-8 rounded-2xl border border-parchment-dark bg-white/80 p-6 shadow-sm md:p-10">
+      <div className="mt-8 rounded-2xl border border-parchment-dark border-t-4 border-t-saffron bg-white/90 p-6 shadow-lg shadow-ink/5 md:p-10">
         <BolGrid
           lines={composition.lines}
           taal={taal}

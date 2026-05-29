@@ -4,7 +4,7 @@
  */
 export const mr = {
   appTitle: "तबल्याची वही",
-  appSubtitle: "तुमची डिजिटल तबला नोंदवही",
+  appSubtitle: "ताल, रचना आणि रियाजाची साथ",
 
   guruName: "वंदनीय श्री प्रफुल्ल आठल्ये",
   dedicationMarathi: "गुरुचरणांमध्ये समर्पित",
