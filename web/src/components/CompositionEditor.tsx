@@ -85,6 +85,10 @@ function supportsLineCycleCount(
   return section === "prakaar" || section === "tihai";
 }
 
+function normalizeQuickInsertSearch(value: string): string {
+  return value.trim().toLocaleLowerCase().replace(/\s+/g, "");
+}
+
 function defaultSectionForKind(kind: CompositionKind): CompositionLineSection {
   return supportsVariationSections(kind) ? "kayda" : "other";
 }
@@ -203,6 +207,26 @@ export function CompositionEditor({
         .sort((a, b) => b.score - a.score || a.index - b.index),
     [quickInsertScores],
   );
+  const quickInsertFilter = normalizeQuickInsertSearch(
+    activeMatraCell?.devanagari ?? "",
+  );
+  const quickInsertFilterLatin = normalizeQuickInsertSearch(
+    transliterateBol(activeMatraCell?.devanagari ?? ""),
+  );
+  const visibleQuickInsertItems = useMemo(() => {
+    if (!quickInsertFilter) return rankedQuickInsertItems;
+
+    return rankedQuickInsertItems.filter(({ bol }) => {
+      const devanagari = normalizeQuickInsertSearch(bol.devanagari);
+      const latin = normalizeQuickInsertSearch(bol.latin);
+      return (
+        devanagari.includes(quickInsertFilter) ||
+        latin.includes(quickInsertFilter) ||
+        (quickInsertFilterLatin.length > 0 &&
+          latin.includes(quickInsertFilterLatin))
+      );
+    });
+  }, [quickInsertFilter, quickInsertFilterLatin, rankedQuickInsertItems]);
   const bulkImportResult = useMemo(
     () =>
       taal
@@ -628,8 +652,21 @@ export function CompositionEditor({
 
       const start = Math.min(selectionStart, current.devanagari.length);
       const end = Math.min(selectionEnd, current.devanagari.length);
-      nextCursor = start + bol.length;
-      const nextValue = `${current.devanagari.slice(0, start)}${bol}${current.devanagari.slice(end)}`;
+      const currentSearch = normalizeQuickInsertSearch(current.devanagari);
+      const bolSearch = normalizeQuickInsertSearch(bol);
+      const bolLatinSearch = normalizeQuickInsertSearch(transliterateBol(bol));
+      const shouldReplacePartialBol =
+        start === end &&
+        currentSearch.length > 0 &&
+        current.devanagari.trim() === current.devanagari &&
+        (bolSearch.includes(currentSearch) ||
+          bolLatinSearch.includes(currentSearch));
+      const replaceStart = shouldReplacePartialBol ? 0 : start;
+      const replaceEnd = shouldReplacePartialBol
+        ? current.devanagari.length
+        : end;
+      nextCursor = replaceStart + bol.length;
+      const nextValue = `${current.devanagari.slice(0, replaceStart)}${bol}${current.devanagari.slice(replaceEnd)}`;
 
       const next = [...prev];
       const line = { ...next[lineIndex], cells: [...next[lineIndex].cells] };
@@ -1121,26 +1158,46 @@ export function CompositionEditor({
           ))}
         </div>
 
+        {quickInsertFilter && (
+          <p className="mb-2 text-xs text-ink/55">
+            Showing {visibleQuickInsertItems.length} match
+            {visibleQuickInsertItems.length === 1 ? "" : "es"} for{" "}
+            <span className="font-devanagari font-semibold text-maroon">
+              {activeMatraCell.devanagari.trim()}
+            </span>
+          </p>
+        )}
+
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-        <div className="flex flex-wrap gap-2">
-        {rankedQuickInsertItems.map(({ bol: { devanagari, latin }, score }) => (
-          <button
-            key={devanagari}
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => insertBolIntoActiveCell(devanagari)}
-            className={`rounded-lg border bg-white px-3 py-2 text-sm shadow-sm transition hover:border-saffron hover:text-maroon ${
-              score > 0
-                ? "border-saffron/50 text-maroon"
-                : "border-parchment-dark text-ink/70"
-            }`}
-            title={`Insert ${devanagari} into selected cell`}
-          >
-            <span className="font-devanagari font-semibold">{devanagari}</span>{" "}
-            <span className="text-maroon-light">({latin})</span>
-          </button>
-        ))}
-        </div>
+          {visibleQuickInsertItems.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {visibleQuickInsertItems.map(
+                ({ bol: { devanagari, latin }, score }) => (
+                  <button
+                    key={devanagari}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => insertBolIntoActiveCell(devanagari)}
+                    className={`rounded-lg border bg-white px-3 py-2 text-sm shadow-sm transition hover:border-saffron hover:text-maroon ${
+                      score > 0
+                        ? "border-saffron/50 text-maroon"
+                        : "border-parchment-dark text-ink/70"
+                    }`}
+                    title={`Insert ${devanagari} into selected cell`}
+                  >
+                    <span className="font-devanagari font-semibold">
+                      {devanagari}
+                    </span>{" "}
+                    <span className="text-maroon-light">({latin})</span>
+                  </button>
+                ),
+              )}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-parchment-dark bg-white/70 px-3 py-3 text-xs text-ink/45">
+              No quick inserts match the current cell yet.
+            </p>
+          )}
         </div>
       </div>
       )}
