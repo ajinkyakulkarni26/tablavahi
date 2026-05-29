@@ -6,12 +6,6 @@ export function DedicationBanner() {
       <div className="rhythm-rule pointer-events-none absolute inset-x-0 bottom-0 h-1 opacity-70" />
       <div className="mx-auto flex max-w-5xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <div className="mb-2 flex items-center gap-2 text-xs font-semibold tracking-[0.32em] text-saffron/85 uppercase">
-            <span>×</span>
-            <span>2</span>
-            <span>०</span>
-            <span>3</span>
-          </div>
           <h1 className="font-devanagari text-3xl font-bold tracking-wide md:text-5xl">
             {mr.appTitle}
           </h1>
