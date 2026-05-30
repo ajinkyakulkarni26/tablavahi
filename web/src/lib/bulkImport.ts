@@ -37,12 +37,14 @@ const STANDALONE_ANNOTATIONS = new Set([
 ]);
 
 function defaultSectionForKind(kind: CompositionKind): CompositionLineSection {
+  if (kind === "chakradar") return "tihai";
   return kind === "kayda" || kind === "rela" ? "kayda" : "other";
 }
 
 function defaultSectionTitleForKind(kind: CompositionKind): string | undefined {
   if (kind === "kayda") return "Main Kayda";
   if (kind === "rela") return "Main Rela";
+  if (kind === "chakradar") return "Chakradar Tihai";
   return undefined;
 }
 
@@ -102,6 +104,14 @@ function detectSectionHeading(
 
   if (/^tihai$/.test(lower) || ["तिहाई", "तिहाइ"].includes(trimmed)) {
     return { section: "tihai", title: "Tihai" };
+  }
+
+  if (
+    kind === "chakradar" &&
+    (/^chakradar(\s+tihai)?$/.test(lower) ||
+      ["चक्रदार", "चक्रदार तिहाई", "चक्रदार तिहाइ"].includes(trimmed))
+  ) {
+    return { section: "tihai", title: "Chakradar Tihai" };
   }
 
   return null;

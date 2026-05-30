@@ -14,6 +14,29 @@ interface BolGridProps {
   mainSectionLabel?: string;
 }
 
+function displayLineSectionLabel(
+  line: CompositionLine | undefined,
+  mainSectionLabel: string,
+): string {
+  if (!line?.section) return "";
+  const title = line.sectionTitle?.trim();
+  if (title) {
+    const isDefaultMainTitle =
+      title === "Main Kayda" ||
+      title === "Main Rela" ||
+      title === "Chakradar Tihai";
+    if (
+      isDefaultMainTitle &&
+      (line.section === "kayda" || mainSectionLabel === "Chakradar Tihai")
+    ) {
+      return mainSectionLabel;
+    }
+    return title;
+  }
+  if (line.section === "kayda") return mainSectionLabel;
+  return COMPOSITION_LINE_SECTION_LABELS[line.section];
+}
+
 export function BolGrid({
   lines,
   taal,
@@ -30,19 +53,12 @@ export function BolGrid({
   return (
     <div className="space-y-3">
       {lines.map((line, lineIndex) => {
-        const sectionLabel = line.section
-          ? (line.sectionTitle?.trim() ||
-            (line.section === "kayda"
-              ? mainSectionLabel
-              : COMPOSITION_LINE_SECTION_LABELS[line.section]))
-          : "";
+        const sectionLabel = displayLineSectionLabel(line, mainSectionLabel);
         const previousLine = lines[lineIndex - 1];
-        const previousSectionLabel = previousLine?.section
-          ? (previousLine.sectionTitle?.trim() ||
-            (previousLine.section === "kayda"
-              ? mainSectionLabel
-              : COMPOSITION_LINE_SECTION_LABELS[previousLine.section]))
-          : "";
+        const previousSectionLabel = displayLineSectionLabel(
+          previousLine,
+          mainSectionLabel,
+        );
         const showSectionHeader =
           Boolean(sectionLabel) && sectionLabel !== previousSectionLabel;
 

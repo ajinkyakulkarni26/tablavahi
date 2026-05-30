@@ -23,7 +23,11 @@ export function CompositionView({
 }: CompositionViewProps) {
   const taal = getTaal(composition.taalId);
   const mainSectionLabel =
-    composition.kind === "rela" ? "Main Rela" : "Main Kayda";
+    composition.kind === "chakradar"
+      ? "Chakradar Tihai"
+      : composition.kind === "rela"
+        ? "Main Rela"
+        : "Main Kayda";
   const sectionLinks = compositionSectionLinks(
     composition.lines,
     mainSectionLabel,

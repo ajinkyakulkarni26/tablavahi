@@ -104,8 +104,23 @@ function lineSectionLabel(
   mainSectionLabel = COMPOSITION_LINE_SECTION_LABELS.kayda,
 ): string {
   if (!line.section) return "";
-  if (line.sectionTitle?.trim()) return line.sectionTitle.trim();
-  if (line.section === "kayda") return mainSectionLabel;
+  const title = line.sectionTitle?.trim();
+  if (title) {
+    const isDefaultMainTitle =
+      title === "Main Kayda" ||
+      title === "Main Rela" ||
+      title === "Chakradar Tihai";
+    if (
+      isDefaultMainTitle &&
+      (line.section === "kayda" || mainSectionLabel === "Chakradar Tihai")
+    ) {
+      return mainSectionLabel;
+    }
+    return title;
+  }
+  if (line.section === "kayda") {
+    return mainSectionLabel;
+  }
   return COMPOSITION_LINE_SECTION_LABELS[line.section];
 }
 

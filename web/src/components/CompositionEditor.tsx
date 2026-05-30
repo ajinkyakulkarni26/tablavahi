@@ -68,6 +68,7 @@ function supportsVariationSections(kind: CompositionKind): boolean {
 }
 
 function mainSectionTitleForKind(kind: CompositionKind): string {
+  if (kind === "chakradar") return "Chakradar Tihai";
   return kind === "rela" ? "Main Rela" : "Main Kayda";
 }
 
@@ -76,7 +77,12 @@ function layoutNameForKind(kind: CompositionKind): string {
 }
 
 function isDefaultMainSectionTitle(title: string | undefined): boolean {
-  return !title || title === "Main Kayda" || title === "Main Rela";
+  return (
+    !title ||
+    title === "Main Kayda" ||
+    title === "Main Rela" ||
+    title === "Chakradar Tihai"
+  );
 }
 
 function supportsLineCycleCount(
@@ -91,7 +97,15 @@ function normalizeQuickInsertSearch(value: string): string {
 }
 
 function defaultSectionForKind(kind: CompositionKind): CompositionLineSection {
+  if (kind === "chakradar") return "tihai";
   return supportsVariationSections(kind) ? "kayda" : "other";
+}
+
+function defaultSectionTitleForKind(kind: CompositionKind): string | undefined {
+  if (supportsVariationSections(kind) || kind === "chakradar") {
+    return mainSectionTitleForKind(kind);
+  }
+  return undefined;
 }
 
 function normalizedSelection(selection: CellSelection): CellRange {
@@ -136,8 +150,8 @@ export function CompositionEditor({
     initial?.lines ?? [
       {
         ...newLineForTaal(getTaal("teentaal")!),
-        section: "kayda",
-        sectionTitle: mainSectionTitleForKind(initialKind),
+        section: defaultSectionForKind(initialKind),
+        sectionTitle: defaultSectionTitleForKind(initialKind),
       },
     ],
   );
@@ -394,12 +408,49 @@ export function CompositionEditor({
       case "prakaar":
         return `Prakar ${countSection("prakaar") + 1}`;
       case "tihai":
-        return "Tihai";
+        return kind === "chakradar" ? "Chakradar Tihai" : "Tihai";
       case "other":
         return "";
       default:
         return "";
     }
+  };
+
+  const normalizeLinesForKind = (
+    sourceLines: CompositionLine[],
+    nextKind: CompositionKind,
+  ): CompositionLine[] => {
+    if (supportsVariationSections(nextKind)) {
+      return sourceLines.map((line, index) => ({
+        ...line,
+        section: line.section ?? (index === 0 ? "kayda" : "prakaar"),
+        sectionTitle:
+          index === 0 && isDefaultMainSectionTitle(line.sectionTitle)
+            ? mainSectionTitleForKind(nextKind)
+            : (line.sectionTitle ?? `Prakar ${index}`),
+      }));
+    }
+
+    if (nextKind === "chakradar") {
+      return sourceLines.map((line) => ({
+        ...line,
+        section: "tihai",
+        sectionTitle: isDefaultMainSectionTitle(line.sectionTitle)
+          ? "Chakradar Tihai"
+          : (line.sectionTitle ?? "Chakradar Tihai"),
+      }));
+    }
+
+    return sourceLines.map((line) => ({
+      ...line,
+      section:
+        line.section === "kayda" || line.section === "tihai"
+          ? "other"
+          : line.section,
+      sectionTitle: isDefaultMainSectionTitle(line.sectionTitle)
+        ? undefined
+        : line.sectionTitle,
+    }));
   };
 
   const createSectionLine = (
@@ -730,20 +781,21 @@ export function CompositionEditor({
     }
     if (!taal) return;
     const now = new Date().toISOString();
+    const normalizedLines = normalizeLinesForKind(lines, kind);
     const composition: Composition = {
       id: initial?.id ?? createId(),
       taalId,
       kind,
       title: title.trim(),
       titleDevanagari: titleDevanagari.trim() || undefined,
-      lines,
+      lines: normalizedLines,
       notes: notes.trim() || undefined,
       guruNote: guruNote.trim() || undefined,
       createdAt: initial?.createdAt ?? now,
       updatedAt: now,
     };
     learnBolsForQuickInsert(
-      lines.flatMap((line) =>
+      normalizedLines.flatMap((line) =>
         line.cells.flatMap((cell) => cell.devanagari.trim().split(/\s+/)),
       ),
     );
@@ -785,18 +837,7 @@ export function CompositionEditor({
             onChange={(e) => {
               const nextKind = e.target.value as CompositionKind;
               setKind(nextKind);
-              if (supportsVariationSections(nextKind)) {
-                setLines((prev) =>
-                  prev.map((line, index) => ({
-                    ...line,
-                    section: line.section ?? (index === 0 ? "kayda" : "prakaar"),
-                    sectionTitle:
-                      index === 0 && isDefaultMainSectionTitle(line.sectionTitle)
-                        ? mainSectionTitleForKind(nextKind)
-                        : (line.sectionTitle ?? `Prakar ${index}`),
-                  })),
-                );
-              }
+              setLines((prev) => normalizeLinesForKind(prev, nextKind));
             }}
             className="mt-1 w-full rounded-lg border border-parchment-dark bg-parchment px-3 py-2"
           >
