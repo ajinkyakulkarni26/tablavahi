@@ -81,8 +81,8 @@ export function BolGrid({
                 <div
                   key={group.startIndex}
                   className={`
-                    flex shrink-0 flex-nowrap justify-center
-                    ${showVibhag && !group.isLast ? "mr-2 border-r-2 border-saffron/40 pr-2" : ""}
+                    flex max-w-full shrink-0 flex-nowrap justify-center
+                    ${showVibhag && !group.isLast ? "mr-1 border-r-2 border-saffron/40 pr-1 sm:mr-2 sm:pr-2" : ""}
                   `}
                 >
                   {group.cells.map((cell, offset) => {
@@ -98,8 +98,12 @@ export function BolGrid({
                       <div
                         key={cellIndex}
                         className={`
-                          flex shrink-0 flex-col items-center
-                          ${compact ? "min-w-[2.25rem] px-0.5" : "min-w-[2.75rem] px-1"}
+                          flex shrink-0 flex-col items-center text-center
+                          ${
+                            compact
+                              ? "w-[2.6rem] px-0.5 sm:w-[3rem]"
+                              : "w-[4.4rem] px-0.5 sm:w-[5rem] md:w-[5.75rem] md:px-1"
+                          }
                         `}
                       >
                         <span className="mb-1 text-[11px] text-ink/35 tabular-nums">
@@ -108,8 +112,8 @@ export function BolGrid({
                         {showDev && (
                           <span
                             className={`
-                              font-devanagari font-bold whitespace-nowrap text-ink
-                              ${compact ? "text-lg" : "text-xl md:text-2xl"}
+                              font-devanagari max-w-full break-words font-bold text-ink
+                              ${compact ? "text-base leading-tight sm:text-lg" : "text-xl leading-tight md:text-2xl"}
                             `}
                           >
                             {cell.devanagari || "—"}
@@ -118,8 +122,8 @@ export function BolGrid({
                         {showLatin && (
                           <span
                             className={`
-                              whitespace-nowrap text-maroon-light tracking-tight
-                              ${compact ? "text-[10px]" : "text-xs"}
+                              max-w-full break-words text-center text-maroon-light tracking-tight
+                              ${compact ? "text-[10px] leading-tight" : "text-[11px] leading-tight sm:text-xs"}
                               ${showDev ? "mt-0.5" : "text-base font-medium"}
                             `}
                           >

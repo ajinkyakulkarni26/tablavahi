@@ -180,7 +180,7 @@ export function CompositionView({
         </nav>
       )}
 
-      <div className="print-composition-card mt-8 rounded-2xl border border-parchment-dark border-t-4 border-t-saffron bg-white/90 p-6 shadow-lg shadow-ink/5 md:p-10">
+      <div className="print-composition-card mt-8 overflow-hidden rounded-2xl border border-parchment-dark border-t-4 border-t-saffron bg-white/90 p-3 shadow-lg shadow-ink/5 sm:p-6 md:p-10">
         <BolGrid
           lines={composition.lines}
           taal={taal}
