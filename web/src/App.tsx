@@ -407,7 +407,7 @@ export default function App() {
     <div className="music-page flex min-h-screen flex-col">
       <DedicationBanner />
 
-      <header className="sticky top-0 z-20 border-b border-parchment-dark/80 bg-parchment/90 px-4 py-3 shadow-sm backdrop-blur">
+      <header className="no-print sticky top-0 z-20 border-b border-parchment-dark/80 bg-parchment/90 px-4 py-3 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-3">
             <button
@@ -567,7 +567,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="border-t border-parchment-dark bg-parchment/80 px-4 py-4 text-center text-xs text-ink/45 backdrop-blur">
+      <footer className="no-print border-t border-parchment-dark bg-parchment/80 px-4 py-4 text-center text-xs text-ink/45 backdrop-blur">
         <CloudSyncPanel
           configured={cloudConfigured}
           busy={cloudBusy}

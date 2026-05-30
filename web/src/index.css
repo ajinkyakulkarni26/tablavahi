@@ -76,3 +76,29 @@ html {
     transparent 3.5rem
   );
 }
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  body,
+  .music-page {
+    background: white !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-composition-card {
+    border: 0 !important;
+    box-shadow: none !important;
+    margin-top: 1rem !important;
+    padding: 0 !important;
+  }
+}

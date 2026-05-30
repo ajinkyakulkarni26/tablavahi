@@ -2,7 +2,7 @@ import { mr } from "../locale/mr";
 
 export function DedicationBanner() {
   return (
-    <section className="music-hero relative overflow-hidden border-b border-saffron/35 px-4 py-5 text-parchment shadow-md">
+    <section className="music-hero no-print relative overflow-hidden border-b border-saffron/35 px-4 py-5 text-parchment shadow-md">
       <div className="rhythm-rule pointer-events-none absolute inset-x-0 bottom-0 h-1 opacity-70" />
       <div className="mx-auto flex max-w-5xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
