@@ -19,7 +19,7 @@ export function DedicationBanner() {
             {mr.guruName}
           </p>
           <p className="font-devanagari mt-1 text-xs text-parchment/75">
-            {mr.dedicationMarathi} — {mr.dedicationSubline}
+            {mr.dedicationMarathi}
           </p>
         </div>
       </div>

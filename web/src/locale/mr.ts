@@ -8,7 +8,6 @@ export const mr = {
 
   guruName: "वंदनीय श्री प्रफुल्ल आठल्ये",
   dedicationMarathi: "गुरुचरणांमध्ये समर्पित",
-  dedicationSubline: "तबल्याच्या परंपरेला विनम्र अभिवादन",
 
   display: "दाखवणे",
   displayBoth: "मराठी / English",
