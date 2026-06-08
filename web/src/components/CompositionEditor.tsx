@@ -126,12 +126,27 @@ function mergeQuickInsertBols(
   userBols: readonly QuickInsertBol[],
 ): QuickInsertBol[] {
   const seen = new Set<string>();
-  return [...defaults, ...userBols].filter((bol) => {
-    const key = bol.devanagari.trim();
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return [...defaults, ...userBols]
+    .filter((bol) => {
+      const key = bol.devanagari.trim();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((bol) => ({
+      devanagari: bol.devanagari.trim(),
+      latin: bol.latin.trim(),
+    }));
+}
+
+function trimLineBols(sourceLines: CompositionLine[]): CompositionLine[] {
+  return sourceLines.map((line) => ({
+    ...line,
+    cells: line.cells.map((cell) => ({
+      ...cell,
+      devanagari: cell.devanagari.trim(),
+    })),
+  }));
 }
 
 export function CompositionEditor({
@@ -783,7 +798,7 @@ export function CompositionEditor({
     }
     if (!taal) return;
     const now = new Date().toISOString();
-    const normalizedLines = normalizeLinesForKind(lines, kind);
+    const normalizedLines = trimLineBols(normalizeLinesForKind(lines, kind));
     const composition: Composition = {
       id: initial?.id ?? createId(),
       taalId,
