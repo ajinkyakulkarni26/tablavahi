@@ -89,7 +89,9 @@ function supportsLineCycleCount(
   kind: CompositionKind,
   section: CompositionLineSection | undefined,
 ): boolean {
-  return kind === "chakradar" || section === "prakaar" || section === "tihai";
+  if (kind === "chakradar") return true;
+  if (!supportsVariationSections(kind)) return false;
+  return section === "kayda" || section === "prakaar" || section === "tihai";
 }
 
 function normalizeQuickInsertSearch(value: string): string {
@@ -921,7 +923,8 @@ export function CompositionEditor({
           <p className="font-medium text-maroon">{layoutName} layout</p>
           <p className="mt-1">
             Start with Main {layoutName}, add each variation as Prakar 1, Prakar 2, and finish
-            with Tihai. Prakar and Tihai lines can extend to 2, 3, or more taal cycles.
+            with Tihai. Main {layoutName}, Prakar, and Tihai lines can extend to 2,
+            3, or more taal cycles.
           </p>
         </div>
       )}
@@ -935,7 +938,9 @@ export function CompositionEditor({
             <p className="text-xs text-ink/50">
               {kind === "chakradar"
                 ? "Chakradar pasted lines can stay longer as 2, 3, or more taal cycles."
-                : `Main lines are grouped by ${taal.matras} matras. Prakar and Tihai pasted lines can stay longer as 2, 3, or more taal cycles.`}
+                : hasVariationSections
+                  ? `Main ${layoutName}, Prakar, and Tihai pasted lines can stay longer as 2, 3, or more taal cycles.`
+                  : `Pasted lines are grouped by ${taal.matras} matras.`}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -985,7 +990,7 @@ export function CompositionEditor({
                 {bulkImportResult.lines.length} grid lines
               </span>
               <span className="rounded-full bg-parchment-dark px-3 py-1">
-                {taal.matras}+ matras per line
+                Multiples of {taal.matras} matras
               </span>
             </div>
 

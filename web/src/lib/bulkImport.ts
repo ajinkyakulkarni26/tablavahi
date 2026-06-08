@@ -207,6 +207,7 @@ export function parseBulkCompositionText(
 
     if (
       kind === "chakradar" ||
+      currentSection === "kayda" ||
       currentSection === "prakaar" ||
       currentSection === "tihai"
     ) {
