@@ -33,6 +33,7 @@ import {
   pathSegments,
   slugifySegment,
 } from "./lib/routes";
+import { normalizeCompositions } from "./lib/compositionNormalization";
 import { mr } from "./locale/mr";
 
 type Screen =
@@ -271,9 +272,10 @@ export default function App() {
   );
 
   const persist = useCallback((next: Composition[]) => {
-    setCompositions(next);
-    saveCompositions(next);
-    void syncCompositionsToCloud(next);
+    const normalized = normalizeCompositions(next);
+    setCompositions(normalized);
+    saveCompositions(normalized);
+    void syncCompositionsToCloud(normalized);
   }, [syncCompositionsToCloud]);
 
   const navigateToBrowse = useCallback(

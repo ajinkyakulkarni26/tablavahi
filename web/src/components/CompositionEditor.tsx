@@ -26,6 +26,7 @@ import {
   loadUserQuickInsertBols,
   saveUserQuickInsertBols,
 } from "../lib/storage";
+import { normalizeCompositionLines } from "../lib/compositionNormalization";
 import { mr } from "../locale/mr";
 
 interface CompositionEditorProps {
@@ -137,16 +138,6 @@ function mergeQuickInsertBols(
       devanagari: bol.devanagari.trim(),
       latin: bol.latin.trim(),
     }));
-}
-
-function trimLineBols(sourceLines: CompositionLine[]): CompositionLine[] {
-  return sourceLines.map((line) => ({
-    ...line,
-    cells: line.cells.map((cell) => ({
-      ...cell,
-      devanagari: cell.devanagari.trim(),
-    })),
-  }));
 }
 
 export function CompositionEditor({
@@ -798,7 +789,9 @@ export function CompositionEditor({
     }
     if (!taal) return;
     const now = new Date().toISOString();
-    const normalizedLines = trimLineBols(normalizeLinesForKind(lines, kind));
+    const normalizedLines = normalizeCompositionLines(
+      normalizeLinesForKind(lines, kind),
+    );
     const composition: Composition = {
       id: initial?.id ?? createId(),
       taalId,

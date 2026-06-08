@@ -19,6 +19,10 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import type { Composition } from "../types";
+import {
+  normalizeComposition,
+  normalizeCompositions,
+} from "./compositionNormalization";
 
 type FirebaseConfig = {
   apiKey: string;
@@ -105,8 +109,9 @@ function toFirestoreCompositionData(
   ownerUid: string,
   ownerDisplayName: string,
 ) {
+  const normalizedComposition = normalizeComposition(composition);
   return replaceUndefinedWithNull({
-    ...composition,
+    ...normalizedComposition,
     ownerUid,
     ownerDisplayName,
   }) as { [key: string]: FirestoreSafeValue };
@@ -157,10 +162,12 @@ export async function loadCompositionsFromCloud(): Promise<Composition[]> {
   const results: Composition[] = [];
   snap.forEach((item) => {
     const data = item.data() as Composition;
-    results.push({
-      ...data,
-      id: item.id,
-    });
+    results.push(
+      normalizeComposition({
+        ...data,
+        id: item.id,
+      }),
+    );
   });
 
   results.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -186,7 +193,8 @@ export async function saveCompositionsToCloud(
   const owned = compositions.filter(
     (composition) => !composition.ownerUid || composition.ownerUid === user.uid,
   );
-  const tasks = owned.map((composition) =>
+  const normalizedOwned = normalizeCompositions(owned);
+  const tasks = normalizedOwned.map((composition) =>
     setDoc(
       doc(db, "compositions", composition.id),
       toFirestoreCompositionData(
