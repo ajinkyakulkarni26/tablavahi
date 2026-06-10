@@ -31,7 +31,7 @@ export function applyTaalMarkers(cells: MatraCell[], taal: Taal): MatraCell[] {
     if (matra === taal.samMatra) {
       return { ...cell, marker: "sam", taaliNumber: undefined };
     }
-    if (matra === taal.khaliMatra) {
+    if (taal.khaliMatras.includes(matra)) {
       return { ...cell, marker: "khali", taaliNumber: undefined };
     }
     const taaliIndex = taal.taaliMatras.indexOf(matra);

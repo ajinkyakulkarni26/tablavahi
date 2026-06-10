@@ -8,7 +8,7 @@ export const TAALS: Taal[] = [
     matras: 16,
     vibhag: [4, 4, 4, 4],
     samMatra: 1,
-    khaliMatra: 9,
+    khaliMatras: [9],
     taaliMatras: [5, 13],
   },
   {
@@ -18,8 +18,8 @@ export const TAALS: Taal[] = [
     matras: 12,
     vibhag: [2, 2, 2, 2, 2, 2],
     samMatra: 1,
-    khaliMatra: 7,
-    taaliMatras: [5, 11],
+    khaliMatras: [3, 7],
+    taaliMatras: [5, 9, 11],
   },
   {
     id: "jhaptaal",
@@ -28,7 +28,7 @@ export const TAALS: Taal[] = [
     matras: 10,
     vibhag: [2, 3, 2, 3],
     samMatra: 1,
-    khaliMatra: 6,
+    khaliMatras: [6],
     taaliMatras: [4, 9],
   },
   {
@@ -38,7 +38,7 @@ export const TAALS: Taal[] = [
     matras: 7,
     vibhag: [3, 2, 2],
     samMatra: 1,
-    khaliMatra: 4,
+    khaliMatras: [4],
     taaliMatras: [],
   },
   {
@@ -48,7 +48,7 @@ export const TAALS: Taal[] = [
     matras: 6,
     vibhag: [3, 3],
     samMatra: 1,
-    khaliMatra: 4,
+    khaliMatras: [4],
     taaliMatras: [],
   },
 ];

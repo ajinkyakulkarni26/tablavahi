@@ -57,7 +57,7 @@ export interface Taal {
   vibhag: number[];
   /** 1-based matra indices for sam, khali, taali (template for new lines) */
   samMatra: number;
-  khaliMatra: number;
+  khaliMatras: number[];
   taaliMatras: number[];
 }
 
