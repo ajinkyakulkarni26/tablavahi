@@ -99,6 +99,7 @@ html {
     border: 0 !important;
     box-shadow: none !important;
     margin-top: 1rem !important;
+    overflow: visible !important;
     padding: 0 !important;
   }
 }

@@ -81,7 +81,7 @@ export function BolGrid({
                 <div
                   key={group.startIndex}
                   className={`
-                    flex max-w-full shrink-0 flex-nowrap justify-center
+                    flex w-max shrink-0 flex-nowrap justify-center
                     ${showVibhag && !group.isLast ? "mr-1 border-r-2 border-saffron/40 pr-1 sm:mr-2 sm:pr-2" : ""}
                   `}
                 >
@@ -93,6 +93,16 @@ export function BolGrid({
                     const showLatin =
                       displayMode === "both" || displayMode === "latin";
                     const marker = markerSymbol(cell.marker, cell.taaliNumber);
+                    const bolLength = cell.devanagari.trim().length;
+                    const devanagariSize = compact
+                      ? bolLength > 8
+                        ? "text-sm leading-tight sm:text-base"
+                        : "text-base leading-tight sm:text-lg"
+                      : bolLength > 10
+                        ? "text-lg leading-tight md:text-xl"
+                        : bolLength > 7
+                          ? "text-xl leading-tight md:text-[1.35rem]"
+                          : "text-xl leading-tight md:text-2xl";
 
                     return (
                       <div
@@ -101,8 +111,8 @@ export function BolGrid({
                           flex shrink-0 flex-col items-center text-center
                           ${
                             compact
-                              ? "w-[2.6rem] px-0.5 sm:w-[3rem]"
-                              : "w-[4.4rem] px-0.5 sm:w-[5rem] md:w-[5.75rem] md:px-1"
+                              ? "w-max min-w-[2.6rem] px-0.5 sm:min-w-[3rem]"
+                              : "w-max min-w-[4.4rem] px-0.5 sm:min-w-[5rem] md:min-w-[5.75rem] md:px-1"
                           }
                         `}
                       >
@@ -112,8 +122,8 @@ export function BolGrid({
                         {showDev && (
                           <span
                             className={`
-                              font-devanagari max-w-full break-words font-bold text-ink
-                              ${compact ? "text-base leading-tight sm:text-lg" : "text-xl leading-tight md:text-2xl"}
+                              font-devanagari whitespace-nowrap font-bold text-ink
+                              ${devanagariSize}
                             `}
                           >
                             {cell.devanagari || "—"}
@@ -122,7 +132,7 @@ export function BolGrid({
                         {showLatin && (
                           <span
                             className={`
-                              max-w-full break-words text-center text-maroon-light tracking-tight
+                              whitespace-nowrap text-center text-maroon-light tracking-tight
                               ${compact ? "text-[10px] leading-tight" : "text-[11px] leading-tight sm:text-xs"}
                               ${showDev ? "mt-0.5" : "text-base font-medium"}
                             `}
