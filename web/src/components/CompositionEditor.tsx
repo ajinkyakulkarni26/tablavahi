@@ -88,7 +88,7 @@ function supportsLineCycleCount(
   kind: CompositionKind,
   section: CompositionLineSection | undefined,
 ): boolean {
-  if (kind === "chakradar") return true;
+  if (kind === "chakradar" || kind === "tukda") return true;
   if (!supportsVariationSections(kind)) return false;
   return section === "kayda" || section === "prakaar" || section === "tihai";
 }
@@ -929,6 +929,8 @@ export function CompositionEditor({
             <p className="text-xs text-ink/50">
               {kind === "chakradar"
                 ? "Chakradar pasted lines can stay longer as 2, 3, or more taal cycles."
+                : kind === "tukda"
+                  ? "Tukda pasted lines can stay longer as 2, 3, or more taal cycles."
                 : hasVariationSections
                   ? `Main ${layoutName}, Prakar, and Tihai pasted lines can stay longer as 2, 3, or more taal cycles.`
                   : `Pasted lines are grouped by ${taal.matras} matras.`}
@@ -1017,7 +1019,7 @@ export function CompositionEditor({
                     >
                       <span className="font-medium text-maroon">
                         {line.sectionTitle ||
-                          (line.section
+                          (line.section && line.section !== "other"
                             ? COMPOSITION_LINE_SECTION_LABELS[line.section]
                             : `Line ${index + 1}`)}
                       </span>

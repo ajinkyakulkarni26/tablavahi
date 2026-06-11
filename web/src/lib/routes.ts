@@ -121,6 +121,9 @@ function lineSectionLabel(
   if (line.section === "kayda") {
     return mainSectionLabel;
   }
+  if (line.section === "other") {
+    return "";
+  }
   return COMPOSITION_LINE_SECTION_LABELS[line.section];
 }
 
