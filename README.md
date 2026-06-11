@@ -65,6 +65,7 @@ The `app/` folder contains the initial Gradle Java stub. The active project is t
 
 ```bash
 cd web
+npm run test:run
 npm run build
 npm run preview
 ```
