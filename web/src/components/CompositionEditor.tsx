@@ -54,8 +54,6 @@ type CellRange = {
   endCellIndex: number;
 };
 
-const PRAKAAR_REPEAT_CELL_INDICES = new Set([4, 5, 6, 7, 12, 13, 14, 15]);
-
 function createId(): string {
   return `comp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
@@ -471,25 +469,10 @@ export function CompositionEditor({
         ? [...sourceLines].reverse().find((line) => line.section === "prakaar")
         : undefined;
     const cellCount = previousPrakaar?.cells.length ?? taal!.matras;
-    const baseLine: CompositionLine = {
+    return {
       cells: applyTaalMarkers(emptyLine(cellCount), taal!),
       section,
       sectionTitle: sectionTitle || undefined,
-    };
-
-    if (section !== "prakaar") return baseLine;
-    if (!previousPrakaar) return baseLine;
-
-    return {
-      ...baseLine,
-      cells: baseLine.cells.map((cell, index) =>
-        PRAKAAR_REPEAT_CELL_INDICES.has(index % taal!.matras)
-          ? {
-              ...cell,
-              devanagari: previousPrakaar.cells[index]?.devanagari ?? "",
-            }
-          : cell,
-      ),
     };
   };
 

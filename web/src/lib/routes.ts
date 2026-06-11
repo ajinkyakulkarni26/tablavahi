@@ -58,7 +58,7 @@ export function slugifySegment(value: string): string {
 
 function bolSlugPart(devanagari: string): string {
   const english = transliterateBol(devanagari).replace(/\s+/g, "");
-  return english.replace(/[^\p{Letter}\p{Mark}\p{Number}]+/gu, "");
+  return english.normalize("NFKD").replace(/[^a-zA-Z0-9]+/g, "");
 }
 
 export function openingBolSlug(composition: Composition): string {

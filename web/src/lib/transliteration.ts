@@ -64,9 +64,33 @@ const BOL_MAP: readonly [string, string][] = [
   ["×", "X"],
 ];
 
+const DEPENDENT_VOWEL_MAP: Record<string, string> = {
+  "ा": "a",
+  "ि": "i",
+  "ी": "i",
+  "ु": "u",
+  "ू": "u",
+  "ृ": "ri",
+  "े": "e",
+  "ै": "ai",
+  "ो": "o",
+  "ौ": "au",
+  "ं": "n",
+  "ँ": "n",
+  "ः": "h",
+  "्": "",
+};
+
 export interface QuickInsertBol {
   devanagari: string;
   latin: string;
+}
+
+function applyDependentVowel(result: string, vowel: string): string {
+  if (!vowel) return result.endsWith("a") ? result.slice(0, -1) : result;
+  if (vowel === "a") return result;
+  if (result.endsWith("a")) return `${result.slice(0, -1)}${vowel}`;
+  return `${result}${vowel}`;
 }
 
 export function transliterateBol(devanagari: string): string {
@@ -89,7 +113,9 @@ export function transliterateBol(devanagari: string): string {
       }
     }
     if (!matched) {
-      result += trimmed[i];
+      const vowel = DEPENDENT_VOWEL_MAP[trimmed[i]];
+      result =
+        vowel != null ? applyDependentVowel(result, vowel) : result + trimmed[i];
       i += 1;
     }
   }
