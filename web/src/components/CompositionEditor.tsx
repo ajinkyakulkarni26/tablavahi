@@ -97,6 +97,14 @@ function normalizeQuickInsertSearch(value: string): string {
   return value.trim().toLocaleLowerCase().replace(/\s+/g, "");
 }
 
+function bolInputFontSize(value: string): string {
+  const length = value.trim().length;
+  if (length >= 13) return "0.72rem";
+  if (length >= 10) return "0.82rem";
+  if (length >= 7) return "0.92rem";
+  return "1.125rem";
+}
+
 function defaultSectionForKind(kind: CompositionKind): CompositionLineSection {
   if (kind === "chakradar") return "tihai";
   return supportsVariationSections(kind) ? "kayda" : "other";
@@ -1376,6 +1384,13 @@ export function CompositionEditor({
                     const activeForEdit =
                       activeCell?.lineIndex === lineIndex &&
                       activeCell?.cellIndex === cellIndex;
+                    const devanagariBol = cell.devanagari.trim();
+                    const latinBol = transliterateBol(cell.devanagari);
+                    const bolTitle = devanagariBol
+                      ? latinBol
+                        ? `${devanagariBol} (${latinBol})`
+                        : devanagariBol
+                      : undefined;
 
                     return (
                       <div
@@ -1478,13 +1493,18 @@ export function CompositionEditor({
                               ? "border-saffron ring-1 ring-saffron/30"
                               : "border-parchment-dark"
                           }`}
+                          style={{ fontSize: bolInputFontSize(cell.devanagari) }}
                           placeholder="धा"
                           lang="mr"
                           inputMode="text"
+                          title={bolTitle}
                           aria-label={`Matra ${cellIndex + 1} bol`}
                         />
-                        <span className="truncate text-center text-[11px] text-maroon-light">
-                          {transliterateBol(cell.devanagari) || "—"}
+                        <span
+                          className="truncate text-center text-[11px] text-maroon-light"
+                          title={latinBol || undefined}
+                        >
+                          {latinBol || "—"}
                         </span>
                         <span className="mt-0.5 text-center font-devanagari text-xs text-maroon/80">
                           {markerSymbol(cell.marker, cell.taaliNumber) || "·"}
