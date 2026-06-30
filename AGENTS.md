@@ -94,6 +94,8 @@ Production build output is `web/dist/`.
   - `kayda`
   - `prakaar`
   - `tihai`
+  - `tukda`
+  - `chakradar`
   - `other`
 
 ## Taal Data
@@ -199,6 +201,7 @@ Firebase config:
 Recent commits before this context file focused on:
 
 - Long bol readability in editor and viewer.
+- Tukda compositions can contain a Chakradar section under the main Tukda.
 - CI validation tests.
 - Multi-cycle tukda support.
 - Simpler prakar creation and bol-based slugs.

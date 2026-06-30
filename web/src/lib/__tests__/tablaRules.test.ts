@@ -58,6 +58,33 @@ describe("bulk import line sizing", () => {
     expect(result.lines).toHaveLength(1);
     expect(result.lines[0].cells).toHaveLength(24);
   });
+
+  it("imports Chakradar as a section under a Tukda composition", () => {
+    const teentaal = getTaal("teentaal")!;
+    const tukdaBols = Array.from({ length: 17 }, () => "धा").join(" ");
+    const chakradarBols = Array.from({ length: 18 }, () => "तिरकिट").join(" ");
+    const text = [
+      "Main Tukda",
+      tukdaBols,
+      "",
+      "Chakradar",
+      chakradarBols,
+    ].join("\n");
+
+    const result = parseBulkCompositionText(text, teentaal, "tukda");
+
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0]).toMatchObject({
+      section: "tukda",
+      sectionTitle: "Main Tukda",
+    });
+    expect(result.lines[0].cells).toHaveLength(32);
+    expect(result.lines[1]).toMatchObject({
+      section: "chakradar",
+      sectionTitle: "Chakradar",
+    });
+    expect(result.lines[1].cells).toHaveLength(32);
+  });
 });
 
 describe("composition labels", () => {
@@ -71,6 +98,28 @@ describe("composition labels", () => {
 
     expect(compositionLineSectionAnchors(lines)).toEqual([""]);
     expect(compositionSectionLinks(lines)).toEqual([]);
+  });
+
+  it("creates section anchors for Tukda and Chakradar lines", () => {
+    const lines = [
+      {
+        section: "tukda" as const,
+        cells: emptyLine(16),
+      },
+      {
+        section: "chakradar" as const,
+        cells: emptyLine(16),
+      },
+    ];
+
+    expect(compositionLineSectionAnchors(lines, "Main Tukda")).toEqual([
+      "main-tukda",
+      "chakradar",
+    ]);
+    expect(compositionSectionLinks(lines, "Main Tukda")).toEqual([
+      { id: "main-tukda", label: "Main Tukda" },
+      { id: "chakradar", label: "Chakradar" },
+    ]);
   });
 });
 

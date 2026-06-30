@@ -66,12 +66,22 @@ function supportsVariationSections(kind: CompositionKind): boolean {
   return kind === "kayda" || kind === "rela";
 }
 
+function supportsTukdaChakradarSections(kind: CompositionKind): boolean {
+  return kind === "tukda";
+}
+
+function supportsStructuredSections(kind: CompositionKind): boolean {
+  return supportsVariationSections(kind) || supportsTukdaChakradarSections(kind);
+}
+
 function mainSectionTitleForKind(kind: CompositionKind): string {
   if (kind === "chakradar") return "Chakradar Tihai";
+  if (kind === "tukda") return "Main Tukda";
   return kind === "rela" ? "Main Rela" : "Main Kayda";
 }
 
 function layoutNameForKind(kind: CompositionKind): string {
+  if (kind === "tukda") return "Tukda";
   return kind === "rela" ? "Rela" : "Kayda";
 }
 
@@ -80,7 +90,18 @@ function isDefaultMainSectionTitle(title: string | undefined): boolean {
     !title ||
     title === "Main Kayda" ||
     title === "Main Rela" ||
+    title === "Main Tukda" ||
     title === "Chakradar Tihai"
+  );
+}
+
+function isDefaultGeneratedSectionTitle(title: string | undefined): boolean {
+  return (
+    isDefaultMainSectionTitle(title) ||
+    title === "Tihai" ||
+    title === "Chakradar" ||
+    /^Prakar\s+\d+$/i.test(title ?? "") ||
+    /^Chakradar\s+\d+$/i.test(title ?? "")
   );
 }
 
@@ -107,11 +128,18 @@ function bolInputFontSize(value: string): string {
 
 function defaultSectionForKind(kind: CompositionKind): CompositionLineSection {
   if (kind === "chakradar") return "tihai";
+  if (supportsTukdaChakradarSections(kind)) return "tukda";
   return supportsVariationSections(kind) ? "kayda" : "other";
 }
 
+function sectionOptionsForKind(kind: CompositionKind): CompositionLineSection[] {
+  if (supportsVariationSections(kind)) return ["kayda", "prakaar", "tihai"];
+  if (supportsTukdaChakradarSections(kind)) return ["tukda", "chakradar"];
+  return ["other"];
+}
+
 function defaultSectionTitleForKind(kind: CompositionKind): string | undefined {
-  if (supportsVariationSections(kind) || kind === "chakradar") {
+  if (supportsStructuredSections(kind) || kind === "chakradar") {
     return mainSectionTitleForKind(kind);
   }
   return undefined;
@@ -186,6 +214,9 @@ export function CompositionEditor({
 
   const taal = useMemo(() => getTaal(taalId), [taalId]);
   const hasVariationSections = supportsVariationSections(kind);
+  const hasTukdaChakradarSections = supportsTukdaChakradarSections(kind);
+  const hasStructuredSections = supportsStructuredSections(kind);
+  const lineSectionOptions = sectionOptionsForKind(kind);
   const layoutName = layoutNameForKind(kind);
   const mainSectionTitle = mainSectionTitleForKind(kind);
   const quickInsertBols = useMemo(
@@ -276,6 +307,9 @@ export function CompositionEditor({
   const copiedCellCount = copiedCellRange
     ? copiedCellRange.endCellIndex - copiedCellRange.startCellIndex + 1
     : 0;
+  const bulkImportPlaceholder = hasTukdaChakradarSections
+    ? `${mainSectionTitle}\nधा धा धा धा धा धा धा न | तिट धा धा धा धा धा धा न\n\nChakradar\nधा धा धा गे ना ती ना | धा धा धा गे ना ती ना`
+    : `${mainSectionTitle}\nधा धा धा धा धा धा धा न | तिट धा धा धा धा धा धा न\n\nPrakar 1\nधा धिं धा धा धा धिं धा न | तिट धा धिं धा धा धिं धा न\n\nTihai\nधा धा धा गे ना ती ना`;
 
   const rememberActiveCell = (
     lineIndex: number,
@@ -423,6 +457,12 @@ export function CompositionEditor({
         return `Prakar ${countSection("prakaar") + 1}`;
       case "tihai":
         return kind === "chakradar" ? "Chakradar Tihai" : "Tihai";
+      case "tukda":
+        return mainSectionTitle;
+      case "chakradar": {
+        const nextCount = countSection("chakradar") + 1;
+        return nextCount === 1 ? "Chakradar" : `Chakradar ${nextCount}`;
+      }
       case "other":
         return "";
       default:
@@ -437,12 +477,37 @@ export function CompositionEditor({
     if (supportsVariationSections(nextKind)) {
       return sourceLines.map((line, index) => ({
         ...line,
-        section: line.section ?? (index === 0 ? "kayda" : "prakaar"),
+        section:
+          line.section === "kayda" ||
+          line.section === "prakaar" ||
+          line.section === "tihai"
+            ? line.section
+            : index === 0
+              ? "kayda"
+              : "prakaar",
         sectionTitle:
           index === 0 && isDefaultMainSectionTitle(line.sectionTitle)
             ? mainSectionTitleForKind(nextKind)
             : (line.sectionTitle ?? `Prakar ${index}`),
       }));
+    }
+
+    if (supportsTukdaChakradarSections(nextKind)) {
+      return sourceLines.map((line, index) => {
+        const section =
+          line.section === "chakradar" || (index > 0 && line.section !== "tukda")
+            ? "chakradar"
+            : "tukda";
+        const defaultTitle =
+          section === "tukda" ? mainSectionTitleForKind(nextKind) : "Chakradar";
+        return {
+          ...line,
+          section,
+          sectionTitle: isDefaultGeneratedSectionTitle(line.sectionTitle)
+            ? defaultTitle
+            : (line.sectionTitle ?? defaultTitle),
+        };
+      });
     }
 
     if (nextKind === "chakradar") {
@@ -457,10 +522,7 @@ export function CompositionEditor({
 
     return sourceLines.map((line) => ({
       ...line,
-      section:
-        line.section === "kayda" || line.section === "tihai"
-          ? "other"
-          : line.section,
+      section: line.section === "other" ? line.section : "other",
       sectionTitle: isDefaultMainSectionTitle(line.sectionTitle)
         ? undefined
         : line.sectionTitle,
@@ -472,11 +534,11 @@ export function CompositionEditor({
     sectionTitle = defaultSectionTitle(section),
     sourceLines: CompositionLine[] = lines,
   ): CompositionLine => {
-    const previousPrakaar =
-      section === "prakaar"
-        ? [...sourceLines].reverse().find((line) => line.section === "prakaar")
+    const previousMatchingLine =
+      section === "prakaar" || section === "chakradar"
+        ? [...sourceLines].reverse().find((line) => line.section === section)
         : undefined;
-    const cellCount = previousPrakaar?.cells.length ?? taal!.matras;
+    const cellCount = previousMatchingLine?.cells.length ?? taal!.matras;
     return {
       cells: applyTaalMarkers(emptyLine(cellCount), taal!),
       section,
@@ -882,29 +944,50 @@ export function CompositionEditor({
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <p className="font-devanagari text-sm text-ink/70">{mr.editorHint}</p>
-        {hasVariationSections ? (
+        {hasStructuredSections ? (
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => addLine("kayda")}
-              className="rounded-full bg-saffron px-4 py-1.5 text-sm font-medium text-ink shadow-sm hover:bg-saffron-dark"
-            >
-              + Main {layoutName}
-            </button>
-            <button
-              type="button"
-              onClick={() => addLine("prakaar")}
-              className="rounded-full bg-maroon px-4 py-1.5 text-sm font-medium text-parchment shadow-sm hover:bg-maroon-light"
-            >
-              + Prakar
-            </button>
-            <button
-              type="button"
-              onClick={() => addLine("tihai")}
-              className="rounded-full border border-maroon/30 bg-white px-4 py-1.5 text-sm font-medium text-maroon shadow-sm hover:bg-maroon hover:text-parchment"
-            >
-              + Tihai
-            </button>
+            {hasVariationSections ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => addLine("kayda")}
+                  className="rounded-full bg-saffron px-4 py-1.5 text-sm font-medium text-ink shadow-sm hover:bg-saffron-dark"
+                >
+                  + Main {layoutName}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addLine("prakaar")}
+                  className="rounded-full bg-maroon px-4 py-1.5 text-sm font-medium text-parchment shadow-sm hover:bg-maroon-light"
+                >
+                  + Prakar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addLine("tihai")}
+                  className="rounded-full border border-maroon/30 bg-white px-4 py-1.5 text-sm font-medium text-maroon shadow-sm hover:bg-maroon hover:text-parchment"
+                >
+                  + Tihai
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => addLine("tukda")}
+                  className="rounded-full bg-saffron px-4 py-1.5 text-sm font-medium text-ink shadow-sm hover:bg-saffron-dark"
+                >
+                  + Main Tukda
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addLine("chakradar")}
+                  className="rounded-full bg-maroon px-4 py-1.5 text-sm font-medium text-parchment shadow-sm hover:bg-maroon-light"
+                >
+                  + Chakradar
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <button
@@ -917,14 +1000,27 @@ export function CompositionEditor({
         )}
       </div>
 
-      {hasVariationSections && (
+      {hasStructuredSections && (
         <div className="mb-4 rounded-lg border border-parchment-dark bg-white/70 p-3 text-sm text-ink/65">
-          <p className="font-medium text-maroon">{layoutName} layout</p>
-          <p className="mt-1">
-            Start with Main {layoutName}, add each variation as Prakar 1, Prakar 2, and finish
-            with Tihai. Main {layoutName}, Prakar, and Tihai lines can extend to 2,
-            3, or more taal cycles.
-          </p>
+          {hasVariationSections ? (
+            <>
+              <p className="font-medium text-maroon">{layoutName} layout</p>
+              <p className="mt-1">
+                Start with Main {layoutName}, add each variation as Prakar 1,
+                Prakar 2, and finish with Tihai. Main {layoutName}, Prakar, and
+                Tihai lines can extend to 2, 3, or more taal cycles.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-medium text-maroon">Tukda layout</p>
+              <p className="mt-1">
+                Start with Main Tukda and add Chakradar lines under it. Main
+                Tukda and Chakradar lines can extend to 2, 3, or more taal
+                cycles.
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -938,7 +1034,7 @@ export function CompositionEditor({
               {kind === "chakradar"
                 ? "Chakradar pasted lines can stay longer as 2, 3, or more taal cycles."
                 : kind === "tukda"
-                  ? "Tukda pasted lines can stay longer as 2, 3, or more taal cycles."
+                  ? "Use Main Tukda and Chakradar headings; pasted lines can stay longer as 2, 3, or more taal cycles."
                 : hasVariationSections
                   ? `Main ${layoutName}, Prakar, and Tihai pasted lines can stay longer as 2, 3, or more taal cycles.`
                   : `Pasted lines are grouped by ${taal.matras} matras.`}
@@ -977,7 +1073,7 @@ export function CompositionEditor({
           onChange={(e) => setBulkImportText(e.target.value)}
           rows={7}
           className="font-devanagari w-full rounded-lg border border-parchment-dark bg-parchment px-3 py-2 text-base leading-8 text-ink focus:border-saffron focus:ring-1 focus:ring-saffron/30 focus:outline-none"
-          placeholder={`${mainSectionTitle}\nधा धा धा धा धा धा धा न | तिट धा धा धा धा धा धा न\n\nPrakar 1\nधा धिं धा धा धा धिं धा न | तिट धा धिं धा धा धिं धा न\n\nTihai\nधा धा धा गे ना ती ना`}
+          placeholder={bulkImportPlaceholder}
           lang="mr"
         />
 
@@ -1265,7 +1361,7 @@ export function CompositionEditor({
                 <span className="text-sm font-medium text-maroon">
                   Line {lineIndex + 1}
                 </span>
-                {hasVariationSections && (
+                {hasStructuredSections && (
                   <>
                     <select
                       value={line.section ?? "other"}
@@ -1274,17 +1370,19 @@ export function CompositionEditor({
                         updateLineSection(lineIndex, {
                           section,
                           sectionTitle:
-                            line.sectionTitle || defaultSectionTitle(section),
+                            isDefaultGeneratedSectionTitle(line.sectionTitle)
+                              ? defaultSectionTitle(section)
+                              : line.sectionTitle || defaultSectionTitle(section),
                         });
                       }}
                       className="rounded-full border border-parchment-dark bg-parchment px-2 py-1 text-xs text-ink/70"
                     >
-                      {(Object.keys(
-                        COMPOSITION_LINE_SECTION_LABELS,
-                      ) as CompositionLineSection[]).map((section) => (
+                      {lineSectionOptions.map((section) => (
                         <option key={section} value={section}>
                           {section === "kayda"
                             ? `Main ${layoutName}`
+                            : section === "tukda"
+                              ? "Main Tukda"
                             : COMPOSITION_LINE_SECTION_LABELS[section]}
                         </option>
                       ))}

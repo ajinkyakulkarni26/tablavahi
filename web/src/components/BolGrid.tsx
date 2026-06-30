@@ -24,16 +24,21 @@ function displayLineSectionLabel(
     const isDefaultMainTitle =
       title === "Main Kayda" ||
       title === "Main Rela" ||
+      title === "Main Tukda" ||
       title === "Chakradar Tihai";
     if (
       isDefaultMainTitle &&
-      (line.section === "kayda" || mainSectionLabel === "Chakradar Tihai")
+      (line.section === "kayda" ||
+        line.section === "tukda" ||
+        mainSectionLabel === "Chakradar Tihai")
     ) {
       return mainSectionLabel;
     }
     return title;
   }
-  if (line.section === "kayda") return mainSectionLabel;
+  if (line.section === "kayda" || line.section === "tukda") {
+    return mainSectionLabel;
+  }
   if (line.section === "other") return "";
   return COMPOSITION_LINE_SECTION_LABELS[line.section];
 }

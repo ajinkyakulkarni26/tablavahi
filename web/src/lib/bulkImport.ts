@@ -38,12 +38,14 @@ const STANDALONE_ANNOTATIONS = new Set([
 
 function defaultSectionForKind(kind: CompositionKind): CompositionLineSection {
   if (kind === "chakradar") return "tihai";
+  if (kind === "tukda") return "tukda";
   return kind === "kayda" || kind === "rela" ? "kayda" : "other";
 }
 
 function defaultSectionTitleForKind(kind: CompositionKind): string | undefined {
   if (kind === "kayda") return "Main Kayda";
   if (kind === "rela") return "Main Rela";
+  if (kind === "tukda") return "Main Tukda";
   if (kind === "chakradar") return "Chakradar Tihai";
   return undefined;
 }
@@ -88,6 +90,25 @@ function detectSectionHeading(
     }
   }
 
+  if (kind === "tukda") {
+    if (
+      /^(main\s+)?tukda$/.test(lower) ||
+      ["तुकडा", "मुख्य तुकडा", "मूळ तुकडा"].includes(trimmed)
+    ) {
+      return { section: "tukda", title: "Main Tukda" };
+    }
+
+    if (
+      /^chakrada{1,2}r(\s+tihai)?(\s+[0-9]+)?$/.test(lower) ||
+      ["चक्रदार", "चक्रदार तिहाई", "चक्रदार तिहाइ"].includes(trimmed)
+    ) {
+      return {
+        section: "chakradar",
+        title: /\d/.test(lower) ? trimmed : undefined,
+      };
+    }
+  }
+
   if (/^(prakar|prakaar)(\s+[0-9]+)?$/.test(lower)) {
     return {
       section: "prakaar",
@@ -108,7 +129,7 @@ function detectSectionHeading(
 
   if (
     kind === "chakradar" &&
-    (/^chakradar(\s+tihai)?$/.test(lower) ||
+    (/^chakrada{1,2}r(\s+tihai)?$/.test(lower) ||
       ["चक्रदार", "चक्रदार तिहाई", "चक्रदार तिहाइ"].includes(trimmed))
   ) {
     return { section: "tihai", title: "Chakradar Tihai" };
@@ -162,6 +183,7 @@ export function parseBulkCompositionText(
   const ignoredLines: string[] = [];
   let tokenCount = 0;
   let prakaarCount = 0;
+  let chakradarCount = 0;
   let currentSection = defaultSectionForKind(kind);
   let currentSectionTitle = defaultSectionTitleForKind(kind);
 
@@ -170,6 +192,13 @@ export function parseBulkCompositionText(
     if (heading.section === "prakaar") {
       prakaarCount += 1;
       currentSectionTitle = heading.title ?? `Prakar ${prakaarCount}`;
+      return;
+    }
+    if (heading.section === "chakradar") {
+      chakradarCount += 1;
+      currentSectionTitle =
+        heading.title ??
+        (chakradarCount === 1 ? "Chakradar" : `Chakradar ${chakradarCount}`);
       return;
     }
     currentSectionTitle = heading.title;
@@ -210,7 +239,9 @@ export function parseBulkCompositionText(
       kind === "tukda" ||
       currentSection === "kayda" ||
       currentSection === "prakaar" ||
-      currentSection === "tihai"
+      currentSection === "tihai" ||
+      currentSection === "tukda" ||
+      currentSection === "chakradar"
     ) {
       lines.push(
         createImportedLine(

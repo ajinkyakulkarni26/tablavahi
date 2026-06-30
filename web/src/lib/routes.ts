@@ -109,16 +109,19 @@ function lineSectionLabel(
     const isDefaultMainTitle =
       title === "Main Kayda" ||
       title === "Main Rela" ||
+      title === "Main Tukda" ||
       title === "Chakradar Tihai";
     if (
       isDefaultMainTitle &&
-      (line.section === "kayda" || mainSectionLabel === "Chakradar Tihai")
+      (line.section === "kayda" ||
+        line.section === "tukda" ||
+        mainSectionLabel === "Chakradar Tihai")
     ) {
       return mainSectionLabel;
     }
     return title;
   }
-  if (line.section === "kayda") {
+  if (line.section === "kayda" || line.section === "tukda") {
     return mainSectionLabel;
   }
   if (line.section === "other") {

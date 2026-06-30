@@ -12,6 +12,7 @@ export interface CompositionTextSection {
 
 export function mainSectionLabelForKind(kind: CompositionKind): string {
   if (kind === "chakradar") return "Chakradar Tihai";
+  if (kind === "tukda") return "Main Tukda";
   if (kind === "rela") return "Main Rela";
   return "Main Kayda";
 }
@@ -25,10 +26,13 @@ function sectionLabelForLine(
     const isDefaultMainTitle =
       title === "Main Kayda" ||
       title === "Main Rela" ||
+      title === "Main Tukda" ||
       title === "Chakradar Tihai";
     if (
       isDefaultMainTitle &&
-      (line.section === "kayda" || mainSectionLabel === "Chakradar Tihai")
+      (line.section === "kayda" ||
+        line.section === "tukda" ||
+        mainSectionLabel === "Chakradar Tihai")
     ) {
       return mainSectionLabel;
     }
@@ -36,7 +40,9 @@ function sectionLabelForLine(
   }
 
   if (!line.section || line.section === "other") return "";
-  if (line.section === "kayda") return mainSectionLabel;
+  if (line.section === "kayda" || line.section === "tukda") {
+    return mainSectionLabel;
+  }
   return COMPOSITION_LINE_SECTION_LABELS[line.section];
 }
 
