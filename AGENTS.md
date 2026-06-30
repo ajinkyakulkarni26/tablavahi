@@ -202,6 +202,8 @@ Recent commits before this context file focused on:
 
 - Long bol readability in editor and viewer.
 - Tukda compositions can contain a Chakradar section under the main Tukda.
+- Repeated default `Chakradar Tihai` lines are displayed/exported as numbered
+  sections, e.g. `Chakradar Tihai 1`, `Chakradar Tihai 2`.
 - CI validation tests.
 - Multi-cycle tukda support.
 - Simpler prakar creation and bol-based slugs.

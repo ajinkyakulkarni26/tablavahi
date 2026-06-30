@@ -1,6 +1,7 @@
 import type { CompositionLine, DisplayMode, Taal } from "../types";
 import { COMPOSITION_LINE_SECTION_LABELS } from "../types";
 import { groupCellsByVibhag, markerSymbol } from "../lib/annotations";
+import { compositionLineSectionLabels } from "../lib/lineSections";
 import { compositionLineSectionAnchors } from "../lib/routes";
 import { transliterateBol } from "../lib/transliteration";
 
@@ -12,35 +13,6 @@ interface BolGridProps {
   showVibhag?: boolean;
   compact?: boolean;
   mainSectionLabel?: string;
-}
-
-function displayLineSectionLabel(
-  line: CompositionLine | undefined,
-  mainSectionLabel: string,
-): string {
-  if (!line?.section) return "";
-  const title = line.sectionTitle?.trim();
-  if (title) {
-    const isDefaultMainTitle =
-      title === "Main Kayda" ||
-      title === "Main Rela" ||
-      title === "Main Tukda" ||
-      title === "Chakradar Tihai";
-    if (
-      isDefaultMainTitle &&
-      (line.section === "kayda" ||
-        line.section === "tukda" ||
-        mainSectionLabel === "Chakradar Tihai")
-    ) {
-      return mainSectionLabel;
-    }
-    return title;
-  }
-  if (line.section === "kayda" || line.section === "tukda") {
-    return mainSectionLabel;
-  }
-  if (line.section === "other") return "";
-  return COMPOSITION_LINE_SECTION_LABELS[line.section];
 }
 
 export function BolGrid({
@@ -55,16 +27,14 @@ export function BolGrid({
     lines,
     mainSectionLabel,
   );
+  const sectionLabels = compositionLineSectionLabels(lines, mainSectionLabel);
 
   return (
     <div className="space-y-3">
       {lines.map((line, lineIndex) => {
-        const sectionLabel = displayLineSectionLabel(line, mainSectionLabel);
-        const previousLine = lines[lineIndex - 1];
-        const previousSectionLabel = displayLineSectionLabel(
-          previousLine,
-          mainSectionLabel,
-        );
+        const sectionLabel = sectionLabels[lineIndex];
+        const previousSectionLabel =
+          lineIndex > 0 ? sectionLabels[lineIndex - 1] : "";
         const showSectionHeader =
           Boolean(sectionLabel) && sectionLabel !== previousSectionLabel;
 

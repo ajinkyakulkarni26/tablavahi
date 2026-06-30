@@ -1,5 +1,5 @@
 import type { Composition, CompositionKind, CompositionLine } from "../types";
-import { COMPOSITION_LINE_SECTION_LABELS } from "../types";
+import { compositionLineSectionLabels } from "./lineSections";
 import { transliterateBol } from "./transliteration";
 
 const KIND_ALIASES: Record<string, CompositionKind> = {
@@ -99,37 +99,6 @@ export function compositionIdFromSlug(segment: string): string | undefined {
   return undefined;
 }
 
-function lineSectionLabel(
-  line: CompositionLine,
-  mainSectionLabel = COMPOSITION_LINE_SECTION_LABELS.kayda,
-): string {
-  if (!line.section) return "";
-  const title = line.sectionTitle?.trim();
-  if (title) {
-    const isDefaultMainTitle =
-      title === "Main Kayda" ||
-      title === "Main Rela" ||
-      title === "Main Tukda" ||
-      title === "Chakradar Tihai";
-    if (
-      isDefaultMainTitle &&
-      (line.section === "kayda" ||
-        line.section === "tukda" ||
-        mainSectionLabel === "Chakradar Tihai")
-    ) {
-      return mainSectionLabel;
-    }
-    return title;
-  }
-  if (line.section === "kayda" || line.section === "tukda") {
-    return mainSectionLabel;
-  }
-  if (line.section === "other") {
-    return "";
-  }
-  return COMPOSITION_LINE_SECTION_LABELS[line.section];
-}
-
 export function sectionAnchorId(label: string, occurrence = 1): string {
   const slug = slugifySegment(label);
   return occurrence > 1 ? `${slug}-${occurrence}` : slug;
@@ -140,11 +109,10 @@ export function compositionLineSectionAnchors(
   mainSectionLabel?: string,
 ): string[] {
   const seen = new Map<string, number>();
+  const labels = compositionLineSectionLabels(lines, mainSectionLabel);
 
-  return lines.map((line, index) => {
-    const label = lineSectionLabel(line, mainSectionLabel);
-    const previousLabel =
-      index > 0 ? lineSectionLabel(lines[index - 1], mainSectionLabel) : "";
+  return labels.map((label, index) => {
+    const previousLabel = index > 0 ? labels[index - 1] : "";
     if (!label || label === previousLabel) return "";
 
     const occurrence = (seen.get(label) ?? 0) + 1;
@@ -158,8 +126,9 @@ export function compositionSectionLinks(
   mainSectionLabel?: string,
 ): { id: string; label: string }[] {
   const anchors = compositionLineSectionAnchors(lines, mainSectionLabel);
+  const labels = compositionLineSectionLabels(lines, mainSectionLabel);
   return anchors.flatMap((id, index) => {
     if (!id) return [];
-    return [{ id, label: lineSectionLabel(lines[index], mainSectionLabel) }];
+    return [{ id, label: labels[index] }];
   });
 }

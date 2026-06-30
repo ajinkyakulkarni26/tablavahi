@@ -4,6 +4,7 @@ import { getTaal } from "../../data/taals";
 import { applyTaalMarkers, emptyLine } from "../annotations";
 import { parseBulkCompositionText } from "../bulkImport";
 import { normalizeComposition } from "../compositionNormalization";
+import { buildCompositionTextSections } from "../exportText";
 import {
   compositionLineSectionAnchors,
   compositionSectionLinks,
@@ -119,6 +120,62 @@ describe("composition labels", () => {
     expect(compositionSectionLinks(lines, "Main Tukda")).toEqual([
       { id: "main-tukda", label: "Main Tukda" },
       { id: "chakradar", label: "Chakradar" },
+    ]);
+  });
+
+  it("numbers repeated default Chakradar Tihai lines", () => {
+    const lines = [
+      {
+        section: "tihai" as const,
+        sectionTitle: "Chakradar Tihai",
+        cells: [{ devanagari: "धा" }],
+      },
+      {
+        section: "tihai" as const,
+        sectionTitle: "Chakradar Tihai",
+        cells: [{ devanagari: "तिरकिट" }],
+      },
+    ];
+
+    expect(compositionLineSectionAnchors(lines, "Chakradar Tihai")).toEqual([
+      "chakradar-tihai-1",
+      "chakradar-tihai-2",
+    ]);
+    expect(compositionSectionLinks(lines, "Chakradar Tihai")).toEqual([
+      { id: "chakradar-tihai-1", label: "Chakradar Tihai 1" },
+      { id: "chakradar-tihai-2", label: "Chakradar Tihai 2" },
+    ]);
+  });
+
+  it("exports repeated Chakradar Tihai lines as separate sections", () => {
+    const teentaal = getTaal("teentaal")!;
+    const composition: Composition = {
+      id: "comp-chakradar",
+      taalId: "teentaal",
+      kind: "chakradar",
+      title: "Teentaal Chakradar",
+      lines: [
+        {
+          section: "tihai",
+          sectionTitle: "Chakradar Tihai",
+          cells: [{ devanagari: "धा" }],
+        },
+        {
+          section: "tihai",
+          sectionTitle: "Chakradar Tihai",
+          cells: [{ devanagari: "तिरकिट" }],
+        },
+      ],
+      createdAt: "2026-06-30T00:00:00.000Z",
+      updatedAt: "2026-06-30T00:00:00.000Z",
+    };
+
+    expect(buildCompositionTextSections(composition, teentaal)).toEqual([
+      { label: "Chakradar Tihai 1", text: "Chakradar Tihai 1\nधा" },
+      {
+        label: "Chakradar Tihai 2",
+        text: "Chakradar Tihai 2\nतिरकिट",
+      },
     ]);
   });
 });
