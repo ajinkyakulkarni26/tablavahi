@@ -2,6 +2,7 @@ import type { Composition, CompositionKind } from "../types";
 import { COMPOSITION_KIND_LABELS } from "../types";
 import { TAALS } from "../data/taals";
 import { getTaal } from "../data/taals";
+import { taalMarkerSequence } from "../lib/annotations";
 
 interface BrowsePanelProps {
   compositions: Composition[];
@@ -113,6 +114,7 @@ export function BrowsePanel({
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => {
             const taal = getTaal(c.taalId);
+            const markerSequence = taal ? taalMarkerSequence(taal) : [];
             const maxLineMatras = Math.max(
               0,
               ...c.lines.map((line) => line.cells.length),
@@ -129,9 +131,14 @@ export function BrowsePanel({
                       {COMPOSITION_KIND_LABELS[c.kind]}
                       {taal && ` · ${taal.name}`}
                     </span>
-                    <span className="font-devanagari text-xs font-semibold tracking-[0.22em] text-raga/45">
-                      × 2 ० 3
-                    </span>
+                    {markerSequence.length > 0 && (
+                      <span
+                        className="font-devanagari shrink-0 text-xs font-semibold tracking-[0.22em] text-raga/45"
+                        title={`${taal?.name ?? "Taal"} marker sequence`}
+                      >
+                        {markerSequence.join(" ")}
+                      </span>
+                    )}
                   </div>
                   {c.titleDevanagari && (
                     <p className="font-devanagari mt-3 text-xl font-bold text-ink group-hover:text-maroon">

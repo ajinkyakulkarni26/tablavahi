@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Composition } from "../../types";
 import { getTaal } from "../../data/taals";
-import { applyTaalMarkers, emptyLine, lineCycleOptions } from "../annotations";
+import {
+  applyTaalMarkers,
+  emptyLine,
+  lineCycleOptions,
+  taalMarkerSequence,
+} from "../annotations";
 import { parseBulkCompositionText } from "../bulkImport";
 import { normalizeComposition } from "../compositionNormalization";
 import { buildCompositionTextSections } from "../exportText";
@@ -46,6 +51,28 @@ describe("line cycle options", () => {
 
   it("keeps the current cycle count when an existing line is longer", () => {
     expect(lineCycleOptions(15)).toContain(15);
+  });
+});
+
+describe("taal marker sequences", () => {
+  it("returns first-cycle marker notation for Teentaal", () => {
+    expect(taalMarkerSequence(getTaal("teentaal")!)).toEqual([
+      "×",
+      "2",
+      "०",
+      "3",
+    ]);
+  });
+
+  it("returns first-cycle marker notation for Ektaal", () => {
+    expect(taalMarkerSequence(getTaal("ektaal")!)).toEqual([
+      "×",
+      "०",
+      "2",
+      "०",
+      "3",
+      "4",
+    ]);
   });
 });
 

@@ -26,6 +26,12 @@ export function markerSymbol(
   }
 }
 
+export function taalMarkerSequence(taal: Taal): string[] {
+  return applyTaalMarkers(emptyLine(taal.matras), taal)
+    .map((cell) => markerSymbol(cell.marker, cell.taaliNumber))
+    .filter(Boolean);
+}
+
 /** Apply taal's default sam / khali / taali markers to a row of empty cells */
 export function applyTaalMarkers(cells: MatraCell[], taal: Taal): MatraCell[] {
   return cells.map((cell, index) => {

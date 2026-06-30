@@ -208,6 +208,8 @@ Recent commits before this context file focused on:
   sections, e.g. `Chakradar Tihai 1`, `Chakradar Tihai 2`.
 - The editor line-length selector supports 12 taal cycles by default, so
   Teentaal lines can be set to 192 matras manually.
+- Browse cards show each composition's taal-specific marker sequence, not a
+  hardcoded Teentaal marker strip.
 - CI validation tests.
 - Multi-cycle tukda support.
 - Simpler prakar creation and bol-based slugs.
