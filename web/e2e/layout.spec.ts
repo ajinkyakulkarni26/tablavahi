@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import type { Composition, CompositionLineSection, MatraCell } from "../src/types";
 
 const STORAGE_KEY = "tablavahi-compositions";
+const TEST_CLIPBOARD_KEY = "tablavahi-test-clipboard";
 const now = "2026-06-30T00:00:00.000Z";
 
 const viewports = [
@@ -66,10 +67,22 @@ const layoutCompositions: Composition[] = [
 ];
 
 async function seedCompositions(page: Page) {
-  await page.addInitScript(({ key, compositions }) => {
+  await page.addInitScript(({ key, clipboardKey, compositions }) => {
     localStorage.setItem(key, JSON.stringify(compositions));
     localStorage.setItem("tablavahi-user-quick-insert-bols", "[]");
-  }, { key: STORAGE_KEY, compositions: layoutCompositions });
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (value: string) => {
+          localStorage.setItem(clipboardKey, value);
+        },
+      },
+    });
+  }, {
+    key: STORAGE_KEY,
+    clipboardKey: TEST_CLIPBOARD_KEY,
+    compositions: layoutCompositions,
+  });
 }
 
 async function expectNoPageOverflow(page: Page) {
@@ -129,6 +142,9 @@ for (const viewport of viewports) {
 
       await page.getByRole("button", { name: "Copy full text" }).click();
       await expect(page.getByText("Copied full composition.")).toBeVisible();
+      await expect
+        .poll(() => page.evaluate((key) => localStorage.getItem(key), TEST_CLIPBOARD_KEY))
+        .toContain("Teen Taal Chakradar Stress");
       await expectNoPageOverflow(page);
     });
 
