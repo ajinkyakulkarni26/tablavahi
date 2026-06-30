@@ -16,6 +16,7 @@ import {
   applyTaalMarkers,
   emptyLine,
   groupCellsByVibhag,
+  lineCycleOptions,
   markerSymbol,
   newLineForTaal,
 } from "../lib/annotations";
@@ -1413,21 +1414,13 @@ export function CompositionEditor({
                       }
                       className="bg-transparent font-medium text-maroon focus:outline-none"
                     >
-                      {Array.from(
-                        new Set([
-                          ...Array.from({ length: 8 }, (_, i) => i + 1),
-                          Math.max(
-                            1,
-                            Math.ceil(line.cells.length / taal.matras),
-                          ),
-                        ]),
-                      )
-                        .sort((a, b) => a - b)
-                        .map((cycles) => (
-                          <option key={cycles} value={cycles}>
-                            {taal.matras * cycles} matras
-                          </option>
-                        ))}
+                      {lineCycleOptions(
+                        Math.ceil(line.cells.length / taal.matras),
+                      ).map((cycles) => (
+                        <option key={cycles} value={cycles}>
+                          {taal.matras * cycles} matras
+                        </option>
+                      ))}
                     </select>
                   </label>
                 )}

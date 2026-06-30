@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Composition } from "../../types";
 import { getTaal } from "../../data/taals";
-import { applyTaalMarkers, emptyLine } from "../annotations";
+import { applyTaalMarkers, emptyLine, lineCycleOptions } from "../annotations";
 import { parseBulkCompositionText } from "../bulkImport";
 import { normalizeComposition } from "../compositionNormalization";
 import { buildCompositionTextSections } from "../exportText";
@@ -32,6 +32,20 @@ describe("taal marker templates", () => {
     expect(cells[18]).toMatchObject({ marker: "khali" });
     expect(cells[20]).toMatchObject({ marker: "taali", taaliNumber: 3 });
     expect(cells[22]).toMatchObject({ marker: "taali", taaliNumber: 4 });
+  });
+});
+
+describe("line cycle options", () => {
+  it("allows 12 cycles so Teentaal lines can reach 192 matras", () => {
+    const teentaal = getTaal("teentaal")!;
+    const options = lineCycleOptions(1);
+
+    expect(options).toContain(12);
+    expect(12 * teentaal.matras).toBe(192);
+  });
+
+  it("keeps the current cycle count when an existing line is longer", () => {
+    expect(lineCycleOptions(15)).toContain(15);
   });
 });
 

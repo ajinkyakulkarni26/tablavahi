@@ -6,6 +6,8 @@ export interface VibhagCellGroup<T> {
   isLast: boolean;
 }
 
+export const MAX_LINE_CYCLES = 12;
+
 /** Display symbol for beat markers (traditional notation style) */
 export function markerSymbol(
   marker: BeatMarker | undefined,
@@ -52,6 +54,18 @@ export function emptyLine(matras: number): MatraCell[] {
 
 export function newLineForTaal(taal: Taal): CompositionLine {
   return { cells: applyTaalMarkers(emptyLine(taal.matras), taal) };
+}
+
+export function lineCycleOptions(
+  currentCycles: number,
+  maxCycles = MAX_LINE_CYCLES,
+): number[] {
+  return Array.from(
+    new Set([
+      ...Array.from({ length: maxCycles }, (_, index) => index + 1),
+      Math.max(1, currentCycles),
+    ]),
+  ).sort((a, b) => a - b);
 }
 
 export function groupCellsByVibhag<T>(

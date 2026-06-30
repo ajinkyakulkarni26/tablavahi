@@ -204,6 +204,8 @@ Recent commits before this context file focused on:
 - Tukda compositions can contain a Chakradar section under the main Tukda.
 - Repeated default `Chakradar Tihai` lines are displayed/exported as numbered
   sections, e.g. `Chakradar Tihai 1`, `Chakradar Tihai 2`.
+- The editor line-length selector supports 12 taal cycles by default, so
+  Teentaal lines can be set to 192 matras manually.
 - CI validation tests.
 - Multi-cycle tukda support.
 - Simpler prakar creation and bol-based slugs.
