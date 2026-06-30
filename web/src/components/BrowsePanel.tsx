@@ -40,8 +40,8 @@ export function BrowsePanel({
   });
 
   return (
-    <div>
-      <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-parchment-dark/90 bg-parchment/85 p-4 shadow-sm backdrop-blur md:flex-row md:items-end">
+    <div className="mx-auto max-w-5xl">
+      <div className="mb-5 grid gap-3 rounded-lg border border-parchment-dark/90 bg-white/72 p-3 shadow-sm backdrop-blur md:grid-cols-[1fr_1fr_1.5fr] md:items-end md:p-4">
         <label className="flex-1">
           <span className="text-xs font-semibold tracking-wide text-raga uppercase">
             Taal
@@ -49,7 +49,7 @@ export function BrowsePanel({
           <select
             value={selectedTaalId}
             onChange={(e) => onTaalChange(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-parchment-dark bg-white px-3 py-2 shadow-inner"
+            className="mt-1 w-full rounded-md border border-parchment-dark bg-parchment px-3 py-2 shadow-inner"
           >
             <option value="all">All taals</option>
             {TAALS.map((t) => (
@@ -69,7 +69,7 @@ export function BrowsePanel({
             onChange={(e) =>
               onKindChange(e.target.value as CompositionKind | "all")
             }
-            className="mt-1 w-full rounded-lg border border-parchment-dark bg-white px-3 py-2 shadow-inner"
+            className="mt-1 w-full rounded-md border border-parchment-dark bg-parchment px-3 py-2 shadow-inner"
           >
             <option value="all">All types</option>
             {(Object.keys(COMPOSITION_KIND_LABELS) as CompositionKind[]).map(
@@ -91,7 +91,7 @@ export function BrowsePanel({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="e.g. Teentaal Kayda"
-            className="mt-1 w-full rounded-lg border border-parchment-dark bg-white px-3 py-2 shadow-inner"
+            className="mt-1 w-full rounded-md border border-parchment-dark bg-parchment px-3 py-2 shadow-inner"
           />
         </label>
       </div>
@@ -100,7 +100,7 @@ export function BrowsePanel({
         <button
           type="button"
           onClick={onAddNew}
-          className="rounded-full bg-raga px-6 py-2.5 font-medium text-parchment shadow-md transition hover:bg-maroon"
+          className="rounded-md bg-raga px-5 py-2.5 font-medium text-parchment shadow-sm transition hover:bg-maroon"
         >
           + Add composition
         </button>
@@ -111,7 +111,7 @@ export function BrowsePanel({
           No compositions found. Try changing filters or add a new one.
         </p>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => {
             const taal = getTaal(c.taalId);
             const markerSequence = taal ? taalMarkerSequence(taal) : [];
@@ -124,16 +124,16 @@ export function BrowsePanel({
                 <button
                   type="button"
                   onClick={() => onSelect(c)}
-                  className="group h-full w-full rounded-xl border border-parchment-dark border-t-4 border-t-saffron bg-white/90 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-raga/30 hover:shadow-lg"
+                  className="group flex h-full w-full flex-col rounded-lg border border-parchment-dark border-t-4 border-t-saffron bg-white/92 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-raga/30 hover:shadow-md"
                 >
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-start justify-between gap-3">
                     <span className="text-xs font-semibold tracking-wide text-copper uppercase">
                       {COMPOSITION_KIND_LABELS[c.kind]}
                       {taal && ` · ${taal.name}`}
                     </span>
                     {markerSequence.length > 0 && (
                       <span
-                        className="font-devanagari shrink-0 text-xs font-semibold tracking-[0.22em] text-raga/45"
+                        className="font-devanagari shrink-0 rounded-full border border-raga/10 bg-raga/5 px-2 py-0.5 text-xs font-semibold tracking-[0.18em] text-raga/55"
                         title={`${taal?.name ?? "Taal"} marker sequence`}
                       >
                         {markerSequence.join(" ")}
@@ -146,7 +146,7 @@ export function BrowsePanel({
                     </p>
                   )}
                   <p className="mt-1 font-medium text-ink/80">{c.title}</p>
-                  <p className="mt-2 text-xs text-ink/45">
+                  <p className="mt-auto pt-3 text-xs text-ink/45">
                     {c.lines.length} line{c.lines.length !== 1 ? "s" : ""} ·{" "}
                     {maxLineMatras} max matras
                   </p>

@@ -122,14 +122,14 @@ export function CompositionView({
 
       <TaalLegend taal={taal} />
 
-      <div className="no-print mt-5 rounded-xl border border-parchment-dark bg-white/75 p-4 text-center shadow-sm">
+      <div className="no-print mt-5 rounded-lg border border-parchment-dark bg-white/75 p-3 text-center shadow-sm">
         <div className="flex flex-wrap justify-center gap-2">
           <button
             type="button"
             onClick={() => {
               void copyText("full composition", fullText);
             }}
-            className="inline-flex items-center gap-2 rounded-full bg-raga px-4 py-2 text-sm font-medium text-parchment hover:bg-maroon"
+            className="inline-flex items-center gap-2 rounded-md bg-raga px-4 py-2 text-sm font-medium text-parchment hover:bg-maroon"
             title="Copy full composition text"
           >
             <CopyIcon className="h-4 w-4 shrink-0" />
@@ -138,15 +138,15 @@ export function CompositionView({
           <button
             type="button"
             onClick={() => window.print()}
-            className="rounded-full border border-maroon/30 bg-white px-4 py-2 text-sm font-medium text-maroon hover:bg-maroon hover:text-parchment"
+            className="rounded-md border border-maroon/30 bg-white px-4 py-2 text-sm font-medium text-maroon hover:bg-maroon hover:text-parchment"
           >
             Print / Save PDF
           </button>
         </div>
 
         {textSections.length > 1 && (
-          <div className="mt-3 flex flex-wrap justify-center gap-2">
-            <span className="px-1 py-1 text-xs font-medium text-ink/50">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 border-t border-parchment-dark pt-3">
+            <span className="px-1 py-1 text-xs font-semibold tracking-wide text-ink/45 uppercase">
               Copy section:
             </span>
             {textSections.map((section) => (
@@ -156,7 +156,7 @@ export function CompositionView({
                 onClick={() => {
                   void copyText(section.label, section.text);
                 }}
-                className="inline-flex items-center gap-1.5 rounded-full border border-parchment-dark bg-parchment px-3 py-1 text-xs font-medium text-ink/70 hover:border-saffron hover:text-maroon"
+                className="inline-flex items-center gap-1.5 rounded-md border border-parchment-dark bg-parchment px-3 py-1 text-xs font-medium text-ink/70 hover:border-saffron hover:text-maroon"
                 title={`Copy ${section.label}`}
               >
                 <CopyIcon className="h-3.5 w-3.5 shrink-0" />
@@ -177,7 +177,7 @@ export function CompositionView({
             <a
               key={section.id}
               href={`#${section.id}`}
-              className="rounded-full border border-parchment-dark bg-white px-3 py-1 font-medium text-maroon-light hover:border-saffron hover:text-maroon"
+              className="rounded-md border border-parchment-dark bg-white px-3 py-1 font-medium text-maroon-light hover:border-saffron hover:text-maroon"
             >
               {section.label}
             </a>
@@ -185,7 +185,7 @@ export function CompositionView({
         </nav>
       )}
 
-      <div className="print-composition-card mt-8 overflow-x-auto rounded-2xl border border-parchment-dark border-t-4 border-t-saffron bg-white/90 p-3 shadow-lg shadow-ink/5 sm:p-6 md:p-10">
+      <div className="print-composition-card mt-8 overflow-x-auto rounded-lg border border-parchment-dark border-t-4 border-t-saffron bg-white/92 p-3 shadow-md shadow-ink/5 sm:p-6 md:p-10">
         <BolGrid
           lines={composition.lines}
           taal={taal}
@@ -203,7 +203,7 @@ export function CompositionView({
           <button
             type="button"
             onClick={onEdit}
-            className="rounded-full border border-maroon/30 bg-white px-6 py-2 text-sm font-medium text-maroon transition hover:bg-maroon hover:text-parchment"
+            className="rounded-md border border-maroon/30 bg-white px-6 py-2 text-sm font-medium text-maroon transition hover:bg-maroon hover:text-parchment"
           >
             Edit this composition
           </button>

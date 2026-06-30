@@ -1,5 +1,5 @@
 /**
- * Common Tabla bols: Marathi (Devanagari) → Latin (for younger readers).
+ * Common Tabla bols: Marathi (Devanagari) → English transliteration in Roman script.
  * Longer keys first so compound bols match correctly.
  */
 const BOL_MAP: readonly [string, string][] = [

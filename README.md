@@ -1,6 +1,6 @@
 # Tabla Vahi — तबला वही
 
-A web notebook for Tabla compositions in **Marathi** (written in Devanagari script): write bols in Marathi, read them in **Latin** (e.g. धा → Dha), and display **sam (×)**, **khali (०)**, and **taali (2, 3…)** markers over the correct matras.
+A web notebook for Tabla compositions in **Marathi** (written in Devanagari script): write bols in Marathi, read them with **English transliteration** in Roman script (e.g. धा → Dha), and display **sam (×)**, **khali (०)**, and **taali (2, 3…)** markers over the correct matras.
 
 *वंदनीय श्री प्रफुल्ल आठल्ये — गुरुचरणांमध्ये समर्पित.*
 
@@ -19,7 +19,7 @@ Open the URL shown (usually http://localhost:5173).
 - **Browse** by taal (Teentaal, Ektaal, …) and type (Kayda, Peshkar, Prakaar, …)
 - **View** compositions with vibhag dividers and beat annotations
 - **Add / edit** compositions on a matra grid with Marathi input and live transliteration
-- **Display modes**: Marathi only, Latin only, or both
+- **Display modes**: Marathi only, English transliteration only, or both
 - **Cloud-ready persistence**: optional Firebase sync for long-term storage and Android migration
 
 Replace the sample Teentaal Kayda with your own notation from your Tabla Vahi.
@@ -66,6 +66,7 @@ The `app/` folder contains the initial Gradle Java stub. The active project is t
 ```bash
 cd web
 npm run test:run
+npm run test:e2e
 npm run build
 npm run preview
 ```

@@ -2,7 +2,8 @@
 
 This repository contains **Tabla Vahi / तबला वही**, a web notebook for Tabla
 compositions in Marathi Devanagari script. Users enter bols in Marathi, view
-Latin transliteration, and display sam, khali, and taali markers over matras.
+English transliteration in Roman script, and display sam, khali, and taali
+markers over matras.
 
 ## Active Project
 
@@ -20,6 +21,7 @@ Run from `web/`:
 npm install
 npm run dev
 npm run test:run
+npm run test:e2e
 npm run build
 ```
 
@@ -39,6 +41,7 @@ Production build output is `web/dist/`.
 - Vite
 - Tailwind CSS v4 via `@tailwindcss/vite`
 - Vitest
+- Playwright for browser layout/e2e tests
 - Firebase Auth and Firestore for optional cloud sync
 - Local storage fallback for browser-only use
 
@@ -64,7 +67,8 @@ Production build output is `web/dist/`.
   - Parses pasted composition text, detects section headings, sizes imported
     lines, and reports unknown bols.
 - `web/src/lib/transliteration.ts`
-  - Devanagari bol to Latin transliteration and common quick-insert bol list.
+  - Devanagari bol to English/Roman transliteration and common quick-insert bol
+    list.
 - `web/src/lib/routes.ts`
   - Path parsing, kind aliases, bol-based slug generation, and section anchors.
 - `web/src/lib/compositionNormalization.ts`
@@ -170,6 +174,17 @@ VITE_FIREBASE_APP_ID=...
 
 Tests live in `web/src/lib/__tests__/tablaRules.test.ts`.
 
+Browser layout/e2e tests live in `web/e2e/` and run with:
+
+```bash
+cd web
+npm run test:e2e
+```
+
+The Playwright config uses local Google Chrome outside CI and Playwright
+Chromium in CI. Tests seed `localStorage` and blank Firebase env values so they
+do not depend on uploaded cloud data.
+
 Current test focus:
 
 - Ektaal marker template across repeated cycles.
@@ -178,6 +193,8 @@ Current test focus:
 - Transliteration of dependent vowel marks.
 - ASCII-only opening bol slugs.
 - Normalization/trimming of stored composition values.
+- Browser layout coverage for browse cards, composition view, copy actions, and
+  192-matra editor lines on mobile and desktop widths.
 
 When changing composition parsing, marker logic, route slugs, normalization, or
 transliteration, add or update tests in this file.
