@@ -28,6 +28,7 @@ import {
   saveUserQuickInsertBols,
 } from "../lib/storage";
 import { normalizeCompositionLines } from "../lib/compositionNormalization";
+import { CopyIcon } from "./icons";
 import { mr } from "../locale/mr";
 
 interface CompositionEditorProps {
@@ -1246,8 +1247,10 @@ export function CompositionEditor({
             disabled={!selectedCellRange}
             onMouseDown={(e) => e.preventDefault()}
             onClick={copySelectedCells}
-            className="rounded-full border border-parchment-dark bg-white px-3 py-1.5 text-xs text-ink/70 hover:border-saffron disabled:cursor-not-allowed disabled:opacity-45"
+            className="inline-flex items-center gap-1.5 rounded-full border border-parchment-dark bg-white px-3 py-1.5 text-xs text-ink/70 hover:border-saffron disabled:cursor-not-allowed disabled:opacity-45"
+            title="Copy selected cells"
           >
+            <CopyIcon className="h-3.5 w-3.5 shrink-0" />
             Copy {selectedCellCount > 1 ? `${selectedCellCount} cells` : "cell"}
           </button>
           <button

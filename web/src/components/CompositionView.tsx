@@ -9,6 +9,7 @@ import {
 } from "../lib/exportText";
 import { compositionSectionLinks } from "../lib/routes";
 import { BolGrid } from "./BolGrid";
+import { CopyIcon } from "./icons";
 import { TaalLegend } from "./TaalLegend";
 
 interface CompositionViewProps {
@@ -128,8 +129,10 @@ export function CompositionView({
             onClick={() => {
               void copyText("full composition", fullText);
             }}
-            className="rounded-full bg-raga px-4 py-2 text-sm font-medium text-parchment hover:bg-maroon"
+            className="inline-flex items-center gap-2 rounded-full bg-raga px-4 py-2 text-sm font-medium text-parchment hover:bg-maroon"
+            title="Copy full composition text"
           >
+            <CopyIcon className="h-4 w-4 shrink-0" />
             Copy full text
           </button>
           <button
@@ -153,8 +156,10 @@ export function CompositionView({
                 onClick={() => {
                   void copyText(section.label, section.text);
                 }}
-                className="rounded-full border border-parchment-dark bg-parchment px-3 py-1 text-xs font-medium text-ink/70 hover:border-saffron hover:text-maroon"
+                className="inline-flex items-center gap-1.5 rounded-full border border-parchment-dark bg-parchment px-3 py-1 text-xs font-medium text-ink/70 hover:border-saffron hover:text-maroon"
+                title={`Copy ${section.label}`}
               >
+                <CopyIcon className="h-3.5 w-3.5 shrink-0" />
                 {section.label}
               </button>
             ))}

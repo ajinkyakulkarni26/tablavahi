@@ -156,6 +156,8 @@ VITE_FIREBASE_APP_ID=...
 - The language is Marathi using Devanagari script, not Hindi.
 - Marathi UI strings live in `web/src/locale/mr.ts`.
 - Devanagari text generally uses the `font-devanagari` class.
+- The app intentionally does not use stored image assets right now. Prefer CSS
+  and inline icons for small UI cues instead of adding image storage.
 - The app has print-specific styles in `web/src/index.css`.
 - Long bols are a recurring usability concern. Keep grid/input widths stable
   and reduce text size based on bol length rather than allowing layout shifts.
