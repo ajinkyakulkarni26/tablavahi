@@ -198,6 +198,14 @@ Firebase config:
 - `web/firestore.rules`
 - `web/firestore.indexes.json`
 
+## Release Baselines
+
+- `v1.0.0` is the major release baseline after the first large composition
+  upload.
+- Baseline commit: `c7b6b351e4d58c1d3e810f5943416507e5e34703`.
+- Use this tag as the known-good rollback/reference point if issues are found
+  after this release.
+
 ## Recent Context From Repository History
 
 Recent commits before this context file focused on:
