@@ -226,6 +226,13 @@ describe("slug and transliteration safety", () => {
     expect(transliterateBol("घि")).toBe("Ghi");
   });
 
+  it("keeps GeNa and KeNa joined for single Marathi bols", () => {
+    expect(transliterateBol("गेना")).toBe("GeNa");
+    expect(transliterateBol("केना")).toBe("KeNa");
+    expect(transliterateBol("गेनाधागे")).toBe("GeNaDha Ge");
+    expect(transliterateBol("केनाताके")).toBe("KeNaTaKe");
+  });
+
   it("generates ASCII-only opening bol slugs", () => {
     const composition: Composition = {
       id: "comp-test",

@@ -165,6 +165,8 @@ VITE_FIREBASE_APP_ID=...
 - The app has print-specific styles in `web/src/index.css`.
 - Section copy actions belong beside the rendered section labels in the
   composition view, not in a separate "Copy section" toolbar.
+- Roman transliteration should keep single Marathi bols `केना` and `गेना`
+  joined as `KeNa` and `GeNa`.
 - Long bols are a recurring usability concern. Keep grid/input widths stable
   and reduce text size based on bol length rather than allowing layout shifts.
 - Composition display modes are:
