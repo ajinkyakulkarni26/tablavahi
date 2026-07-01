@@ -22,6 +22,7 @@ npm install
 npm run dev
 npm run test:run
 npm run test:e2e
+npm run migrate:prakaar
 npm run build
 ```
 
@@ -128,6 +129,10 @@ This matters for tukdas, chakradars, and longer imported lines.
 - Firestore collection: `compositions`.
 - Firestore rules allow public read, but create/update/delete require Google
   sign-in and composition ownership.
+- The one-time Firestore cleanup for stored `Prakar N` section titles is
+  `npm run migrate:prakaar` from `web/`. It dry-runs by default; use
+  `npm run migrate:prakaar -- --write` with a service account to update
+  matching `section === "prakaar"` lines to `Prakaar N`.
 
 Firebase env vars expected in `web/.env.local` and GitHub Actions secrets:
 

@@ -8,6 +8,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e": "playwright test",
+    "migrate:prakaar": "node scripts/fix-prakaar-section-titles.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview"
   },
