@@ -163,6 +163,8 @@ VITE_FIREBASE_APP_ID=...
 - The app intentionally does not use stored image assets right now. Prefer CSS
   and inline icons for small UI cues instead of adding image storage.
 - The app has print-specific styles in `web/src/index.css`.
+- Section copy actions belong beside the rendered section labels in the
+  composition view, not in a separate "Copy section" toolbar.
 - Long bols are a recurring usability concern. Keep grid/input widths stable
   and reduce text size based on bol length rather than allowing layout shifts.
 - Composition display modes are:

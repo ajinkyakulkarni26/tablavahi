@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { CompositionLine, DisplayMode, Taal } from "../types";
 import { COMPOSITION_LINE_SECTION_LABELS } from "../types";
 import { groupCellsByVibhag, markerSymbol } from "../lib/annotations";
@@ -13,6 +14,7 @@ interface BolGridProps {
   showVibhag?: boolean;
   compact?: boolean;
   mainSectionLabel?: string;
+  renderSectionAction?: (sectionLabel: string) => ReactNode;
 }
 
 export function BolGrid({
@@ -22,6 +24,7 @@ export function BolGrid({
   showVibhag = true,
   compact = false,
   mainSectionLabel = COMPOSITION_LINE_SECTION_LABELS.kayda,
+  renderSectionAction,
 }: BolGridProps) {
   const sectionAnchorIds = compositionLineSectionAnchors(
     lines,
@@ -45,8 +48,9 @@ export function BolGrid({
                 id={sectionAnchorIds[lineIndex]}
                 className="scroll-mt-24 text-center"
               >
-                <span className="rounded-full bg-saffron/15 px-3 py-1 text-xs font-semibold tracking-wide text-maroon uppercase">
-                  {sectionLabel}
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-saffron/15 px-3 py-1 text-xs font-semibold tracking-wide text-maroon uppercase">
+                  <span>{sectionLabel}</span>
+                  {renderSectionAction?.(sectionLabel)}
                 </span>
               </div>
             )}

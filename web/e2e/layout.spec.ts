@@ -139,6 +139,13 @@ for (const viewport of viewports) {
       await expect(page.getByText("Chakradar Tihai 1").first()).toBeVisible();
       await expect(page.getByText("Chakradar Tihai 2").first()).toBeVisible();
       await expect(page.getByRole("button", { name: "Copy full text" })).toBeVisible();
+      await expect(page.getByText("Copy section:")).toHaveCount(0);
+
+      await page.getByRole("button", { name: "Copy Chakradar Tihai 1" }).click();
+      await expect(page.getByText("Copied Chakradar Tihai 1.")).toBeVisible();
+      await expect
+        .poll(() => page.evaluate((key) => localStorage.getItem(key), TEST_CLIPBOARD_KEY))
+        .toContain("Chakradar Tihai 1");
 
       await page.getByRole("button", { name: "Copy full text" }).click();
       await expect(page.getByText("Copied full composition.")).toBeVisible();

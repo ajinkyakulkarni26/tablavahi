@@ -38,6 +38,10 @@ export function CompositionView({
     () => (taal ? buildCompositionTextSections(composition, taal) : []),
     [composition, taal],
   );
+  const textSectionByLabel = useMemo(
+    () => new Map(textSections.map((section) => [section.label, section])),
+    [textSections],
+  );
   const fullText = useMemo(
     () => (taal ? formatCompositionAsText(composition, taal) : ""),
     [composition, taal],
@@ -144,30 +148,10 @@ export function CompositionView({
           </button>
         </div>
 
-        {textSections.length > 1 && (
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 border-t border-parchment-dark pt-3">
-            <span className="px-1 py-1 text-xs font-semibold tracking-wide text-ink/45 uppercase">
-              Copy section:
-            </span>
-            {textSections.map((section) => (
-              <button
-                key={section.label}
-                type="button"
-                onClick={() => {
-                  void copyText(section.label, section.text);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-md border border-parchment-dark bg-parchment px-3 py-1 text-xs font-medium text-ink/70 hover:border-saffron hover:text-maroon"
-                title={`Copy ${section.label}`}
-              >
-                <CopyIcon className="h-3.5 w-3.5 shrink-0" />
-                {section.label}
-              </button>
-            ))}
-          </div>
-        )}
-
         {copyStatus && (
-          <p className="mt-2 text-xs font-medium text-raga">{copyStatus}</p>
+          <p className="mt-2 text-xs font-medium text-raga" role="status">
+            {copyStatus}
+          </p>
         )}
       </div>
 
@@ -191,6 +175,24 @@ export function CompositionView({
           taal={taal}
           displayMode={displayMode}
           mainSectionLabel={mainSectionLabel}
+          renderSectionAction={(sectionLabel) => {
+            const section = textSectionByLabel.get(sectionLabel);
+            if (!section) return null;
+
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  void copyText(section.label, section.text);
+                }}
+                className="no-print inline-flex h-5 w-5 items-center justify-center rounded-md border border-saffron/25 bg-white/80 text-maroon-light transition hover:border-saffron hover:bg-white hover:text-maroon focus:ring-2 focus:ring-saffron/50 focus:outline-none"
+                title={`Copy ${section.label}`}
+                aria-label={`Copy ${section.label}`}
+              >
+                <CopyIcon className="h-3 w-3" />
+              </button>
+            );
+          }}
         />
       </div>
 
