@@ -20,9 +20,9 @@ export type CompositionLineSection =
 
 export interface CompositionLine {
   cells: MatraCell[];
-  /** Optional structural section, useful for Kayda/Rela -> Prakar -> Tihai layout */
+  /** Optional structural section, useful for Kayda/Rela -> Prakaar -> Tihai layout */
   section?: CompositionLineSection;
-  /** Optional visible section name, e.g. Prakar 1 */
+  /** Optional visible section name, e.g. Prakaar 1 */
   sectionTitle?: string;
 }
 
@@ -85,7 +85,7 @@ export const COMPOSITION_LINE_SECTION_LABELS: Record<
   string
 > = {
   kayda: "Main Kayda",
-  prakaar: "Prakar",
+  prakaar: "Prakaar",
   tihai: "Tihai",
   tukda: "Main Tukda",
   chakradar: "Chakradar",

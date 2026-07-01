@@ -102,7 +102,7 @@ function isDefaultGeneratedSectionTitle(title: string | undefined): boolean {
     isDefaultMainSectionTitle(title) ||
     title === "Tihai" ||
     title === "Chakradar" ||
-    /^Prakar\s+\d+$/i.test(title ?? "") ||
+    /^Prakaar\s+\d+$/i.test(title ?? "") ||
     /^Chakradar\s+\d+$/i.test(title ?? "")
   );
 }
@@ -311,7 +311,7 @@ export function CompositionEditor({
     : 0;
   const bulkImportPlaceholder = hasTukdaChakradarSections
     ? `${mainSectionTitle}\nधा धा धा धा धा धा धा न | तिट धा धा धा धा धा धा न\n\nChakradar\nधा धा धा गे ना ती ना | धा धा धा गे ना ती ना`
-    : `${mainSectionTitle}\nधा धा धा धा धा धा धा न | तिट धा धा धा धा धा धा न\n\nPrakar 1\nधा धिं धा धा धा धिं धा न | तिट धा धिं धा धा धिं धा न\n\nTihai\nधा धा धा गे ना ती ना`;
+    : `${mainSectionTitle}\nधा धा धा धा धा धा धा न | तिट धा धा धा धा धा धा न\n\nPrakaar 1\nधा धिं धा धा धा धिं धा न | तिट धा धिं धा धा धिं धा न\n\nTihai\nधा धा धा गे ना ती ना`;
 
   const rememberActiveCell = (
     lineIndex: number,
@@ -456,7 +456,7 @@ export function CompositionEditor({
       case "kayda":
         return mainSectionTitle;
       case "prakaar":
-        return `Prakar ${countSection("prakaar") + 1}`;
+        return `Prakaar ${countSection("prakaar") + 1}`;
       case "tihai":
         return kind === "chakradar" ? "Chakradar Tihai" : "Tihai";
       case "tukda":
@@ -490,7 +490,7 @@ export function CompositionEditor({
         sectionTitle:
           index === 0 && isDefaultMainSectionTitle(line.sectionTitle)
             ? mainSectionTitleForKind(nextKind)
-            : (line.sectionTitle ?? `Prakar ${index}`),
+            : (line.sectionTitle ?? `Prakaar ${index}`),
       }));
     }
 
@@ -962,7 +962,7 @@ export function CompositionEditor({
                   onClick={() => addLine("prakaar")}
                   className="rounded-full bg-maroon px-4 py-1.5 text-sm font-medium text-parchment shadow-sm hover:bg-maroon-light"
                 >
-                  + Prakar
+                  + Prakaar
                 </button>
                 <button
                   type="button"
@@ -1008,8 +1008,8 @@ export function CompositionEditor({
             <>
               <p className="font-medium text-maroon">{layoutName} layout</p>
               <p className="mt-1">
-                Start with Main {layoutName}, add each variation as Prakar 1,
-                Prakar 2, and finish with Tihai. Main {layoutName}, Prakar, and
+                Start with Main {layoutName}, add each variation as Prakaar 1,
+                Prakaar 2, and finish with Tihai. Main {layoutName}, Prakaar, and
                 Tihai lines can extend to 2, 3, or more taal cycles.
               </p>
             </>
@@ -1037,9 +1037,9 @@ export function CompositionEditor({
                 ? "Chakradar pasted lines can stay longer as 2, 3, or more taal cycles."
                 : kind === "tukda"
                   ? "Use Main Tukda and Chakradar headings; pasted lines can stay longer as 2, 3, or more taal cycles."
-                : hasVariationSections
-                  ? `Main ${layoutName}, Prakar, and Tihai pasted lines can stay longer as 2, 3, or more taal cycles.`
-                  : `Pasted lines are grouped by ${taal.matras} matras.`}
+                  : hasVariationSections
+                    ? `Main ${layoutName}, Prakaar, and Tihai pasted lines can stay longer as 2, 3, or more taal cycles.`
+                    : `Pasted lines are grouped by ${taal.matras} matras.`}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

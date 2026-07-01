@@ -11,8 +11,6 @@ const KIND_ALIASES: Record<string, CompositionKind> = {
   peshkars: "peshkar",
   prakaar: "prakaar",
   prakaars: "prakaar",
-  prakar: "prakaar",
-  prakars: "prakaar",
   rela: "rela",
   relas: "rela",
   tukda: "tukda",

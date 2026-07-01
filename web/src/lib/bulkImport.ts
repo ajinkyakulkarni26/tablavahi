@@ -109,7 +109,7 @@ function detectSectionHeading(
     }
   }
 
-  if (/^(prakar|prakaar)(\s+[0-9]+)?$/.test(lower)) {
+  if (/^prakaar(\s+[0-9]+)?$/.test(lower)) {
     return {
       section: "prakaar",
       title: /\d/.test(lower) ? trimmed : undefined,
@@ -191,7 +191,7 @@ export function parseBulkCompositionText(
     currentSection = heading.section;
     if (heading.section === "prakaar") {
       prakaarCount += 1;
-      currentSectionTitle = heading.title ?? `Prakar ${prakaarCount}`;
+      currentSectionTitle = heading.title ?? `Prakaar ${prakaarCount}`;
       return;
     }
     if (heading.section === "chakradar") {

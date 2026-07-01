@@ -241,7 +241,7 @@ Recent commits before this context file focused on:
   hardcoded Teentaal marker strip.
 - CI validation tests.
 - Multi-cycle tukda support.
-- Simpler prakar creation and bol-based slugs.
+- Simpler Prakaar creation and bol-based slugs.
 - Ektaal default marker fixes.
 - Composition inventory whitespace normalization.
 - Trimming bol values before saving.

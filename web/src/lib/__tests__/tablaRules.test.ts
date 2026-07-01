@@ -14,6 +14,7 @@ import {
   compositionLineSectionAnchors,
   compositionSectionLinks,
   openingBolSlug,
+  parseKindSegment,
 } from "../routes";
 import { transliterateBol } from "../transliteration";
 
@@ -127,6 +128,18 @@ describe("bulk import line sizing", () => {
     });
     expect(result.lines[1].cells).toHaveLength(32);
   });
+
+  it("uses Prakaar spelling for imported variation sections", () => {
+    const teentaal = getTaal("teentaal")!;
+    const text = ["Prakaar", "धा धा"].join("\n");
+
+    const result = parseBulkCompositionText(text, teentaal, "kayda");
+
+    expect(result.lines[0]).toMatchObject({
+      section: "prakaar",
+      sectionTitle: "Prakaar 1",
+    });
+  });
 });
 
 describe("composition labels", () => {
@@ -222,6 +235,11 @@ describe("composition labels", () => {
 });
 
 describe("slug and transliteration safety", () => {
+  it("parses the corrected Prakaar route spelling", () => {
+    expect(parseKindSegment("prakaar")).toBe("prakaar");
+    expect(parseKindSegment("prakaars")).toBe("prakaar");
+  });
+
   it("transliterates dependent vowel marks instead of leaking them into URLs", () => {
     expect(transliterateBol("घि")).toBe("Ghi");
   });

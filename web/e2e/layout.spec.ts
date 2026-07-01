@@ -59,7 +59,7 @@ const layoutCompositions: Composition[] = [
     titleDevanagari: "एक ताल कायदा मांडणी",
     lines: [
       line(48, "kayda", "Main Kayda"),
-      line(48, "prakaar", "Prakar 1"),
+      line(48, "prakaar", "Prakaar 1"),
     ],
     createdAt: now,
     updatedAt: now,
