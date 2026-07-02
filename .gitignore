@@ -7,3 +7,6 @@ build
 # Node / web
 web/node_modules
 web/dist
+
+# Local Firebase service account keys
+*-firebase-adminsdk-*.json
