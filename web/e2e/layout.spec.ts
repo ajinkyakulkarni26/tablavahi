@@ -64,6 +64,36 @@ const layoutCompositions: Composition[] = [
     createdAt: now,
     updatedAt: now,
   },
+  {
+    id: "layout-teentaal-kayda-1",
+    taalId: "teentaal",
+    kind: "kayda",
+    title: "Teen Taal Kayda - 1",
+    titleDevanagari: "तीनताल कायदा - १",
+    lines: [line(16, "kayda", "Main Kayda")],
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: "layout-teentaal-kayda-2",
+    taalId: "teentaal",
+    kind: "kayda",
+    title: "Teen Taal Kayda - 2",
+    titleDevanagari: "तीनताल कायदा - २",
+    lines: [line(16, "kayda", "Main Kayda")],
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: "layout-teentaal-kayda-10",
+    taalId: "teentaal",
+    kind: "kayda",
+    title: "Teen Taal Kayda - 10",
+    titleDevanagari: "तीनताल कायदा - १०",
+    lines: [line(16, "kayda", "Main Kayda")],
+    createdAt: now,
+    updatedAt: now,
+  },
 ];
 
 async function seedCompositions(page: Page) {
@@ -152,6 +182,47 @@ for (const viewport of viewports) {
       await expect
         .poll(() => page.evaluate((key) => localStorage.getItem(key), TEST_CLIPBOARD_KEY))
         .toContain("Teen Taal Chakradar Stress");
+      await expectNoPageOverflow(page);
+    });
+
+    test("composition view navigates between same-taal same-type compositions", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      const kaydaOneCard = page.locator("li").filter({
+        has: page.getByText("Teen Taal Kayda - 1", { exact: true }),
+      });
+
+      await kaydaOneCard.getByRole("button").click();
+
+      await expect(
+        page.getByRole("heading", { name: "Teen Taal Kayda - 1" }),
+      ).toBeVisible();
+      await expect(page.getByText("1 of 3")).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Previous composition" }),
+      ).toBeDisabled();
+
+      await page
+        .getByRole("button", {
+          name: "Next composition: Teen Taal Kayda - 2",
+        })
+        .click();
+
+      await expect(
+        page.getByRole("heading", { name: "Teen Taal Kayda - 2" }),
+      ).toBeVisible();
+      await expect(page.getByText("2 of 3")).toBeVisible();
+      await expect(
+        page.getByRole("button", {
+          name: "Previous composition: Teen Taal Kayda - 1",
+        }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", {
+          name: "Next composition: Teen Taal Kayda - 10",
+        }),
+      ).toBeVisible();
       await expectNoPageOverflow(page);
     });
 

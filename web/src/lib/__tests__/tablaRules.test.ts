@@ -8,6 +8,7 @@ import {
   taalMarkerSequence,
 } from "../annotations";
 import { parseBulkCompositionText } from "../bulkImport";
+import { neighboringCompositions } from "../compositionNavigation";
 import { normalizeComposition } from "../compositionNormalization";
 import { buildCompositionTextSections } from "../exportText";
 import {
@@ -231,6 +232,46 @@ describe("composition labels", () => {
         text: "Chakradar Tihai 2\nतिरकिट",
       },
     ]);
+  });
+});
+
+describe("composition navigation", () => {
+  function composition(
+    id: string,
+    title: string,
+    taalId = "teentaal",
+    kind: Composition["kind"] = "kayda",
+  ): Composition {
+    return {
+      id,
+      taalId,
+      kind,
+      title,
+      lines: [{ cells: [{ devanagari: "धा" }] }],
+      createdAt: "2026-07-05T00:00:00.000Z",
+      updatedAt: "2026-07-05T00:00:00.000Z",
+    };
+  }
+
+  it("finds previous and next compositions within the same taal and type", () => {
+    const active = composition("kayda-2", "Teen Taal Kayda - 2");
+    const state = neighboringCompositions(
+      [
+        composition("kayda-10", "Teen Taal Kayda - 10"),
+        composition("rela-1", "Teen Taal Rela - 1", "teentaal", "rela"),
+        composition("ektaal-kayda-1", "Ek Taal Kayda - 1", "ektaal"),
+        active,
+        composition("kayda-1", "Teen Taal Kayda - 1"),
+      ],
+      active,
+    );
+
+    expect(state).toMatchObject({
+      previous: { id: "kayda-1" },
+      next: { id: "kayda-10" },
+      index: 2,
+      total: 3,
+    });
   });
 });
 

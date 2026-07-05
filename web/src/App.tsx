@@ -33,6 +33,7 @@ import {
   pathSegments,
   slugifySegment,
 } from "./lib/routes";
+import { neighboringCompositions } from "./lib/compositionNavigation";
 import { normalizeCompositions } from "./lib/compositionNormalization";
 import { mr } from "./locale/mr";
 
@@ -321,6 +322,24 @@ export default function App() {
   const canEditActiveComposition =
     activeComposition != null &&
     (!activeComposition.ownerUid || activeComposition.ownerUid === cloudUser?.uid);
+  const activeCompositionNavigation = useMemo(
+    () =>
+      activeComposition
+        ? neighboringCompositions(compositions, activeComposition)
+        : undefined,
+    [activeComposition, compositions],
+  );
+
+  const navigateToComposition = useCallback(
+    (composition: Composition) => {
+      navigateToScreen(
+        { name: "view", id: composition.id },
+        "push",
+        buildCompositionPath(composition),
+      );
+    },
+    [navigateToScreen],
+  );
 
   const handleSave = (composition: Composition) => {
     const normalized: Composition = {
@@ -488,6 +507,11 @@ export default function App() {
             composition={activeComposition}
             displayMode={displayMode}
             canEdit={canEditActiveComposition}
+            previousComposition={activeCompositionNavigation?.previous}
+            nextComposition={activeCompositionNavigation?.next}
+            navigationIndex={activeCompositionNavigation?.index ?? 1}
+            navigationTotal={activeCompositionNavigation?.total ?? 1}
+            onNavigateComposition={navigateToComposition}
             onEdit={() => {
               if (!canEditActiveComposition) return;
               navigateToScreen(

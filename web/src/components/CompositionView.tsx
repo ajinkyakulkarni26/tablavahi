@@ -16,6 +16,11 @@ interface CompositionViewProps {
   composition: Composition;
   displayMode: DisplayMode;
   canEdit: boolean;
+  previousComposition?: Composition;
+  nextComposition?: Composition;
+  navigationIndex: number;
+  navigationTotal: number;
+  onNavigateComposition: (composition: Composition) => void;
   onEdit: () => void;
   onBack: () => void;
 }
@@ -24,6 +29,11 @@ export function CompositionView({
   composition,
   displayMode,
   canEdit,
+  previousComposition,
+  nextComposition,
+  navigationIndex,
+  navigationTotal,
+  onNavigateComposition,
   onEdit,
   onBack,
 }: CompositionViewProps) {
@@ -87,6 +97,9 @@ export function CompositionView({
     }
   };
 
+  const compositionNavLabel = (target: Composition | undefined) =>
+    target?.title || target?.titleDevanagari || "Composition";
+
   return (
     <article className="mx-auto max-w-4xl">
       <button
@@ -125,6 +138,58 @@ export function CompositionView({
       </header>
 
       <TaalLegend taal={taal} />
+
+      {navigationTotal > 1 && (
+        <nav className="no-print mt-5 grid gap-2 rounded-lg border border-parchment-dark bg-white/72 p-2 text-sm shadow-sm sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
+          <button
+            type="button"
+            disabled={!previousComposition}
+            onClick={() => {
+              if (previousComposition) onNavigateComposition(previousComposition);
+            }}
+            className="min-w-0 rounded-md border border-parchment-dark bg-parchment px-3 py-2 text-left text-maroon-light transition hover:border-saffron hover:text-maroon disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-parchment-dark disabled:hover:text-maroon-light"
+            aria-label={
+              previousComposition
+                ? `Previous composition: ${compositionNavLabel(previousComposition)}`
+                : "Previous composition"
+            }
+          >
+            <span className="block text-[11px] font-semibold tracking-wide text-ink/45 uppercase">
+              Previous
+            </span>
+            <span className="block truncate">
+              {previousComposition
+                ? compositionNavLabel(previousComposition)
+                : "Start of list"}
+            </span>
+          </button>
+
+          <span className="justify-self-center rounded-full bg-saffron/15 px-3 py-1 text-xs font-semibold text-maroon">
+            {navigationIndex} of {navigationTotal}
+          </span>
+
+          <button
+            type="button"
+            disabled={!nextComposition}
+            onClick={() => {
+              if (nextComposition) onNavigateComposition(nextComposition);
+            }}
+            className="min-w-0 rounded-md border border-parchment-dark bg-parchment px-3 py-2 text-left text-maroon-light transition hover:border-saffron hover:text-maroon disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-parchment-dark disabled:hover:text-maroon-light sm:text-right"
+            aria-label={
+              nextComposition
+                ? `Next composition: ${compositionNavLabel(nextComposition)}`
+                : "Next composition"
+            }
+          >
+            <span className="block text-[11px] font-semibold tracking-wide text-ink/45 uppercase">
+              Next
+            </span>
+            <span className="block truncate">
+              {nextComposition ? compositionNavLabel(nextComposition) : "End of list"}
+            </span>
+          </button>
+        </nav>
+      )}
 
       <div className="no-print mt-5 rounded-lg border border-parchment-dark bg-white/75 p-3 text-center shadow-sm">
         <div className="flex flex-wrap justify-center gap-2">
