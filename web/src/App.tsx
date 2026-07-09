@@ -148,6 +148,7 @@ export default function App() {
   );
   const [searchQuery, setSearchQuery] = useState(initialRoute.searchQuery);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("both");
+  const [cellClipboard, setCellClipboard] = useState<string[]>([]);
   const [cloudBusy, setCloudBusy] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const [cloudStatus, setCloudStatus] = useState(
@@ -539,6 +540,8 @@ export default function App() {
         {screen.name === "edit" && (!screen.id || activeComposition) && (
           <CompositionEditor
             initial={screen.id ? activeComposition : undefined}
+            cellClipboard={cellClipboard}
+            onCellClipboardChange={setCellClipboard}
             onSave={handleSave}
             onCancel={() => {
               if (screen.id && activeComposition) {

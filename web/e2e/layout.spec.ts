@@ -127,6 +127,46 @@ async function expectNoPageOverflow(page: Page) {
   expect(overflow).toBeLessThanOrEqual(2);
 }
 
+test("editor keeps copied cells available when moving between compositions", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await seedCompositions(page);
+  await page.goto("/");
+
+  await page
+    .locator("li")
+    .filter({ has: page.getByText("Teen Taal Kayda - 1", { exact: true }) })
+    .getByRole("button")
+    .click();
+  await page.getByRole("button", { name: "Edit this composition" }).click();
+
+  await page.getByLabel("Matra 1 bol").first().click();
+  await page.getByRole("button", { name: "Range select" }).click();
+  await page.getByLabel("Matra 3 bol").first().click();
+  await page.getByRole("button", { name: "Copy 3 cells" }).click();
+  await expect(page.getByRole("button", { name: "Paste 3" })).toBeEnabled();
+
+  await page.getByRole("button", { name: "तबल्याची वही" }).click();
+  await page
+    .locator("li")
+    .filter({ has: page.getByText("Teen Taal Kayda - 2", { exact: true }) })
+    .getByRole("button")
+    .click();
+  await page.getByRole("button", { name: "Edit this composition" }).click();
+
+  await page.getByLabel("Matra 5 bol").first().click();
+  const pasteButton = page.getByRole("button", { name: "Paste 3" });
+  await expect(pasteButton).toBeEnabled();
+  await pasteButton.click();
+
+  await expect(page.getByLabel("Matra 5 bol").first()).toHaveValue("धा");
+  await expect(page.getByLabel("Matra 6 bol").first()).toHaveValue("तिरकिट");
+  await expect(page.getByLabel("Matra 7 bol").first()).toHaveValue(
+    "धागेतिरकिट",
+  );
+});
+
 for (const viewport of viewports) {
   test.describe(`layout at ${viewport.name}`, () => {
     test.beforeEach(async ({ page }) => {

@@ -33,6 +33,8 @@ import { mr } from "../locale/mr";
 
 interface CompositionEditorProps {
   initial?: Composition;
+  cellClipboard: string[];
+  onCellClipboardChange: (bols: string[]) => void;
   onSave: (composition: Composition) => void;
   onCancel: () => void;
 }
@@ -178,6 +180,8 @@ function mergeQuickInsertBols(
 
 export function CompositionEditor({
   initial,
+  cellClipboard,
+  onCellClipboardChange,
   onSave,
   onCancel,
 }: CompositionEditorProps) {
@@ -201,7 +205,6 @@ export function CompositionEditor({
   );
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
   const [cellSelection, setCellSelection] = useState<CellSelection | null>(null);
-  const [cellClipboard, setCellClipboard] = useState<string[]>([]);
   const [copiedCellRange, setCopiedCellRange] = useState<CellRange | null>(
     null,
   );
@@ -679,7 +682,7 @@ export function CompositionEditor({
     const sourceLine = lines[selectedCellRange.lineIndex];
     if (!sourceLine) return;
 
-    setCellClipboard(
+    onCellClipboardChange(
       sourceLine.cells
         .slice(
           selectedCellRange.startCellIndex,
