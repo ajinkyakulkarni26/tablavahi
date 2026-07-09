@@ -193,6 +193,15 @@ export function CompositionView({
 
       <div className="no-print mt-5 rounded-lg border border-parchment-dark bg-white/75 p-3 text-center shadow-sm">
         <div className="flex flex-wrap justify-center gap-2">
+          {canEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="rounded-md border border-maroon/30 bg-white px-4 py-2 text-sm font-medium text-maroon transition hover:bg-maroon hover:text-parchment"
+            >
+              Edit this composition
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -216,6 +225,11 @@ export function CompositionView({
         {copyStatus && (
           <p className="mt-2 text-xs font-medium text-raga" role="status">
             {copyStatus}
+          </p>
+        )}
+        {!canEdit && (
+          <p className="mt-2 text-xs text-ink/50">
+            This shared composition is read-only for your account.
           </p>
         )}
       </div>
@@ -263,22 +277,6 @@ export function CompositionView({
 
       {composition.notes && (
         <p className="mt-6 text-center text-sm text-ink/60">{composition.notes}</p>
-      )}
-
-      {canEdit ? (
-        <div className="no-print mt-8 flex justify-center">
-          <button
-            type="button"
-            onClick={onEdit}
-            className="rounded-md border border-maroon/30 bg-white px-6 py-2 text-sm font-medium text-maroon transition hover:bg-maroon hover:text-parchment"
-          >
-            Edit this composition
-          </button>
-        </div>
-      ) : (
-        <p className="no-print mt-8 text-center text-xs text-ink/50">
-          This shared composition is read-only for your account.
-        </p>
       )}
     </article>
   );
