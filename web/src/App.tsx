@@ -28,10 +28,9 @@ import {
   buildBrowsePath,
   buildCompositionPath,
   compositionIdFromSlug,
-  openingBolSlug,
+  findCompositionByRouteId,
   parseKindSegment,
   pathSegments,
-  slugifySegment,
 } from "./lib/routes";
 import { neighboringCompositions } from "./lib/compositionNavigation";
 import { normalizeCompositions } from "./lib/compositionNormalization";
@@ -311,14 +310,13 @@ export default function App() {
     if (screen.name !== "view" && screen.name !== "edit") return undefined;
     const id = screen.name === "edit" ? screen.id : screen.id;
     if (!id) return undefined;
-    return compositions.find((c) => {
-      if (c.id === id) return true;
-      return (
-        openingBolSlug(c) === id ||
-        slugifySegment(c.title || c.titleDevanagari || "composition") === id
-      );
-    });
-  }, [screen, compositions]);
+    return findCompositionByRouteId(
+      compositions,
+      id,
+      selectedTaalId,
+      selectedKind,
+    );
+  }, [screen, compositions, selectedTaalId, selectedKind]);
 
   const canEditActiveComposition =
     activeComposition != null &&

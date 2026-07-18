@@ -13,7 +13,9 @@ import { normalizeComposition } from "../compositionNormalization";
 import { buildCompositionTextSections } from "../exportText";
 import {
   buildCompositionPath,
+  compositionRouteKey,
   compositionIdFromSlug,
+  findCompositionByRouteId,
   compositionLineSectionAnchors,
   compositionSectionLinks,
   openingBolSlug,
@@ -316,9 +318,9 @@ describe("slug and transliteration safety", () => {
     expect(openingBolSlug(composition)).toMatch(/^[A-Za-z0-9-]+$/);
   });
 
-  it("adds the composition id to bol-based paths so duplicate openings stay unique", () => {
+  it("adds a readable composition key to bol-based paths so duplicate openings stay unique", () => {
     const base: Composition = {
-      id: "comp-tukda-6",
+      id: "comp-1784390900000-aaaaaaa",
       taalId: "teentaal",
       kind: "tukda",
       title: "Teen Taal Tukda 6",
@@ -335,11 +337,13 @@ describe("slug and transliteration safety", () => {
     };
     const duplicateOpening = {
       ...base,
-      id: "comp-tukda-7",
+      id: "comp-1784390978907-lueowtl",
       title: "Teen Taal Tukda 7",
     };
 
     expect(openingBolSlug(base)).toBe(openingBolSlug(duplicateOpening));
+    expect(compositionRouteKey(base)).toBe("comp-tukda-6");
+    expect(compositionRouteKey(duplicateOpening)).toBe("comp-tukda-7");
     expect(buildCompositionPath(base)).toBe(
       "/teentaal/tukda/DhiRaDhiRa-KiTaTKa--comp-tukda-6",
     );
@@ -349,6 +353,29 @@ describe("slug and transliteration safety", () => {
     expect(compositionIdFromSlug("DhiRaDhiRa-KiTaTKa--comp-tukda-7")).toBe(
       "comp-tukda-7",
     );
+    expect(
+      findCompositionByRouteId(
+        [base, duplicateOpening],
+        "comp-tukda-7",
+        "teentaal",
+        "tukda",
+      ),
+    ).toMatchObject({ id: "comp-1784390978907-lueowtl" });
+  });
+
+  it("uses Marathi title digits when creating readable composition keys", () => {
+    const composition: Composition = {
+      id: "comp-test",
+      taalId: "teentaal",
+      kind: "tukda",
+      title: "",
+      titleDevanagari: "तीनताल तुकडा - ७",
+      lines: [{ cells: [{ devanagari: "धा" }] }],
+      createdAt: "2026-07-18T00:00:00.000Z",
+      updatedAt: "2026-07-18T00:00:00.000Z",
+    };
+
+    expect(compositionRouteKey(composition)).toBe("comp-tukda-7");
   });
 });
 

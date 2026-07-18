@@ -22,6 +22,19 @@ const KIND_ALIASES: Record<string, CompositionKind> = {
   other: "other",
 };
 
+const DEVANAGARI_DIGITS: Record<string, string> = {
+  "०": "0",
+  "१": "1",
+  "२": "2",
+  "३": "3",
+  "४": "4",
+  "५": "5",
+  "६": "6",
+  "७": "7",
+  "८": "8",
+  "९": "9",
+};
+
 function safeDecode(value: string): string {
   try {
     return decodeURIComponent(value);
@@ -75,6 +88,28 @@ export function openingBolSlug(composition: Composition): string {
   );
 }
 
+function normalizeDigits(value: string): string {
+  return value.replace(/[०-९]/g, (digit) => DEVANAGARI_DIGITS[digit] ?? digit);
+}
+
+function trailingTitleNumber(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const match = normalizeDigits(value).trim().match(/(?:^|[\s._-])(\d+)$/u);
+  return match?.[1];
+}
+
+export function compositionRouteKey(composition: Composition): string {
+  const titleNumber =
+    trailingTitleNumber(composition.title) ??
+    trailingTitleNumber(composition.titleDevanagari);
+  if (titleNumber) return `comp-${composition.kind}-${titleNumber}`;
+
+  const titleSlug = slugifySegment(
+    composition.title || composition.titleDevanagari || "composition",
+  );
+  return `comp-${titleSlug}`;
+}
+
 export function buildBrowsePath(
   taalId: string,
   kind: CompositionKind | "all",
@@ -86,7 +121,9 @@ export function buildBrowsePath(
 }
 
 export function buildCompositionPath(composition: Composition): string {
-  const slug = `${openingBolSlug(composition)}--${composition.id}`;
+  const slug = `${openingBolSlug(composition)}--${compositionRouteKey(
+    composition,
+  )}`;
   return `/${encodeURIComponent(composition.taalId)}/${composition.kind}/${encodeURIComponent(
     slug,
   )}`;
@@ -98,6 +135,33 @@ export function compositionIdFromSlug(segment: string): string | undefined {
   if (separatorIndex >= 0) return decoded.slice(separatorIndex + 2);
   if (decoded.startsWith("comp-")) return decoded;
   return undefined;
+}
+
+export function findCompositionByRouteId(
+  compositions: Composition[],
+  id: string,
+  taalId: string,
+  kind: CompositionKind | "all",
+): Composition | undefined {
+  const exactIdMatch = compositions.find((composition) => composition.id === id);
+  if (exactIdMatch) return exactIdMatch;
+
+  const scopedCompositions = compositions.filter((composition) => {
+    if (composition.taalId !== taalId) return false;
+    if (kind !== "all" && composition.kind !== kind) return false;
+    return true;
+  });
+
+  return scopedCompositions.find((composition) => {
+    const titleSlug = slugifySegment(
+      composition.title || composition.titleDevanagari || "composition",
+    );
+    return (
+      compositionRouteKey(composition) === id ||
+      openingBolSlug(composition) === id ||
+      titleSlug === id
+    );
+  });
 }
 
 export function sectionAnchorId(label: string, occurrence = 1): string {
