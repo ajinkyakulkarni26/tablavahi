@@ -12,6 +12,8 @@ import { neighboringCompositions } from "../compositionNavigation";
 import { normalizeComposition } from "../compositionNormalization";
 import { buildCompositionTextSections } from "../exportText";
 import {
+  buildCompositionPath,
+  compositionIdFromSlug,
   compositionLineSectionAnchors,
   compositionSectionLinks,
   openingBolSlug,
@@ -312,6 +314,41 @@ describe("slug and transliteration safety", () => {
 
     expect(openingBolSlug(composition)).toBe("DhaSaGhiDhaNaGe-TirkitDhaTiRa");
     expect(openingBolSlug(composition)).toMatch(/^[A-Za-z0-9-]+$/);
+  });
+
+  it("adds the composition id to bol-based paths so duplicate openings stay unique", () => {
+    const base: Composition = {
+      id: "comp-tukda-6",
+      taalId: "teentaal",
+      kind: "tukda",
+      title: "Teen Taal Tukda 6",
+      lines: [
+        {
+          cells: [
+            { devanagari: "धिरधिर" },
+            { devanagari: "किटतक" },
+          ],
+        },
+      ],
+      createdAt: "2026-07-18T00:00:00.000Z",
+      updatedAt: "2026-07-18T00:00:00.000Z",
+    };
+    const duplicateOpening = {
+      ...base,
+      id: "comp-tukda-7",
+      title: "Teen Taal Tukda 7",
+    };
+
+    expect(openingBolSlug(base)).toBe(openingBolSlug(duplicateOpening));
+    expect(buildCompositionPath(base)).toBe(
+      "/teentaal/tukda/DhiRaDhiRa-KiTaTKa--comp-tukda-6",
+    );
+    expect(buildCompositionPath(duplicateOpening)).toBe(
+      "/teentaal/tukda/DhiRaDhiRa-KiTaTKa--comp-tukda-7",
+    );
+    expect(compositionIdFromSlug("DhiRaDhiRa-KiTaTKa--comp-tukda-7")).toBe(
+      "comp-tukda-7",
+    );
   });
 });
 
