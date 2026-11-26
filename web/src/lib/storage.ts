@@ -5,9 +5,12 @@ import {
   normalizeCompositions,
 } from "./compositionNormalization";
 import type { QuickInsertBol } from "./transliteration";
+import { clampPracticeBpm, DEFAULT_PRACTICE_BPM } from "./practicePlayback";
 
 const STORAGE_KEY = "tablavahi-compositions";
 const USER_QUICK_INSERT_KEY = "tablavahi-user-quick-insert-bols";
+const PRACTICE_BPM_KEY = "tablavahi-practice-bpm";
+const PRACTICE_SOUND_KEY = "tablavahi-practice-sound";
 
 function normalizeQuickInsertBols(bols: QuickInsertBol[]): QuickInsertBol[] {
   const seen = new Set<string>();
@@ -105,4 +108,40 @@ export function saveUserQuickInsertBols(bols: QuickInsertBol[]): void {
     USER_QUICK_INSERT_KEY,
     JSON.stringify(normalizeQuickInsertBols(bols)),
   );
+}
+
+export function loadPracticeBpm(): number {
+  try {
+    const raw = localStorage.getItem(PRACTICE_BPM_KEY);
+    if (!raw) return DEFAULT_PRACTICE_BPM;
+    return clampPracticeBpm(Number(raw));
+  } catch {
+    return DEFAULT_PRACTICE_BPM;
+  }
+}
+
+export function savePracticeBpm(bpm: number): void {
+  try {
+    localStorage.setItem(PRACTICE_BPM_KEY, String(clampPracticeBpm(bpm)));
+  } catch {
+    // Ignore storage quota / privacy mode errors
+  }
+}
+
+export function loadPracticeSoundEnabled(): boolean {
+  try {
+    const raw = localStorage.getItem(PRACTICE_SOUND_KEY);
+    if (raw === null) return true;
+    return raw !== "false";
+  } catch {
+    return true;
+  }
+}
+
+export function savePracticeSoundEnabled(enabled: boolean): void {
+  try {
+    localStorage.setItem(PRACTICE_SOUND_KEY, enabled ? "true" : "false");
+  } catch {
+    // Ignore storage errors
+  }
 }

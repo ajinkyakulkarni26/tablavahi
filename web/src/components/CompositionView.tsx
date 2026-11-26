@@ -9,7 +9,7 @@ import {
 } from "../lib/exportText";
 import { compositionSectionLinks } from "../lib/routes";
 import { BolGrid } from "./BolGrid";
-import { CopyIcon } from "./icons";
+import { CopyIcon, PlayIcon } from "./icons";
 import { TaalLegend } from "./TaalLegend";
 
 interface CompositionViewProps {
@@ -21,6 +21,7 @@ interface CompositionViewProps {
   navigationIndex: number;
   navigationTotal: number;
   onNavigateComposition: (composition: Composition) => void;
+  onPlay: () => void;
   onEdit: () => void;
   onBack: () => void;
 }
@@ -34,6 +35,7 @@ export function CompositionView({
   navigationIndex,
   navigationTotal,
   onNavigateComposition,
+  onPlay,
   onEdit,
   onBack,
 }: CompositionViewProps) {
@@ -193,6 +195,14 @@ export function CompositionView({
 
       <div className="no-print mt-5 rounded-lg border border-parchment-dark bg-white/75 p-3 text-center shadow-sm">
         <div className="flex flex-wrap justify-center gap-2">
+          <button
+            type="button"
+            onClick={onPlay}
+            className="inline-flex items-center gap-2 rounded-md bg-maroon px-4 py-2 text-sm font-semibold text-parchment shadow-sm transition hover:bg-raga"
+          >
+            <PlayIcon className="h-4 w-4 shrink-0" />
+            Play / Practise
+          </button>
           {canEdit && (
             <button
               type="button"

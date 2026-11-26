@@ -4,6 +4,7 @@ import type { Composition, CompositionKind, DisplayMode } from "./types";
 import { DedicationBanner } from "./components/DedicationBanner";
 import { BrowsePanel } from "./components/BrowsePanel";
 import { CompositionView } from "./components/CompositionView";
+import { CompositionPlayView } from "./components/CompositionPlayView";
 import { CompositionEditor } from "./components/CompositionEditor";
 import { CloudSyncPanel } from "./components/CloudSyncPanel";
 import { DeveloperContact } from "./components/DeveloperContact";
@@ -27,6 +28,7 @@ import {
 import {
   buildBrowsePath,
   buildCompositionPath,
+  buildCompositionPlayPath,
   compositionIdFromSlug,
   findCompositionByRouteId,
   parseKindSegment,
@@ -39,6 +41,7 @@ import { mr } from "./locale/mr";
 type Screen =
   | { name: "browse" }
   | { name: "view"; id: string }
+  | { name: "play"; id: string }
   | { name: "edit"; id?: string }
   | { name: "contact" };
 
@@ -96,14 +99,17 @@ function parseAppRoute(location: Location): ParsedAppRoute {
     ? (compositionIdFromSlug(segments[2]) ?? segments[2])
     : undefined;
   const compositionId = newFormatId ?? legacyFormatId;
-  const editSegment = newFormatId ? segments[4] : segments[3];
+  const actionSegment = newFormatId ? segments[4] : segments[3];
 
   if (compositionId) {
+    const nextScreen: Screen =
+      actionSegment === "edit"
+        ? { name: "edit", id: compositionId }
+        : actionSegment === "play"
+          ? { name: "play", id: compositionId }
+          : { name: "view", id: compositionId };
     return {
-      screen:
-        editSegment === "edit"
-          ? { name: "edit", id: compositionId }
-          : { name: "view", id: compositionId },
+      screen: nextScreen,
       selectedTaalId: taal.id,
       selectedKind: kind,
       searchQuery,
@@ -307,8 +313,14 @@ export default function App() {
   );
 
   const activeComposition = useMemo(() => {
-    if (screen.name !== "view" && screen.name !== "edit") return undefined;
-    const id = screen.name === "edit" ? screen.id : screen.id;
+    if (
+      screen.name !== "view" &&
+      screen.name !== "play" &&
+      screen.name !== "edit"
+    ) {
+      return undefined;
+    }
+    const id = screen.id;
     if (!id) return undefined;
     return findCompositionByRouteId(
       compositions,
@@ -511,6 +523,13 @@ export default function App() {
             navigationIndex={activeCompositionNavigation?.index ?? 1}
             navigationTotal={activeCompositionNavigation?.total ?? 1}
             onNavigateComposition={navigateToComposition}
+            onPlay={() =>
+              navigateToScreen(
+                { name: "play", id: activeComposition.id },
+                "push",
+                buildCompositionPlayPath(activeComposition),
+              )
+            }
             onEdit={() => {
               if (!canEditActiveComposition) return;
               navigateToScreen(
@@ -530,6 +549,27 @@ export default function App() {
         )}
 
         {screen.name === "view" && !activeComposition && (
+          <p className="text-center text-ink/50">
+            {cloudBusy ? "Loading composition..." : "Composition not found."}
+          </p>
+        )}
+
+        {screen.name === "play" && activeComposition && (
+          <CompositionPlayView
+            key={activeComposition.id}
+            composition={activeComposition}
+            displayMode={displayMode}
+            onExit={() =>
+              navigateToScreen(
+                { name: "view", id: activeComposition.id },
+                "replace",
+                buildCompositionPath(activeComposition),
+              )
+            }
+          />
+        )}
+
+        {screen.name === "play" && !activeComposition && (
           <p className="text-center text-ink/50">
             {cloudBusy ? "Loading composition..." : "Composition not found."}
           </p>

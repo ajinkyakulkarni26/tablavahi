@@ -70,7 +70,11 @@ const layoutCompositions: Composition[] = [
     kind: "kayda",
     title: "Teen Taal Kayda - 1",
     titleDevanagari: "तीनताल कायदा - १",
-    lines: [line(16, "kayda", "Main Kayda")],
+    lines: [
+      line(16, "kayda", "Main Kayda"),
+      line(16, "prakaar", "Prakaar 1"),
+      line(16, "tihai", "Tihai"),
+    ],
     createdAt: now,
     updatedAt: now,
   },
@@ -281,6 +285,73 @@ for (const viewport of viewports) {
 
       await expect(lengthSelect).toHaveValue("12");
       await expect(page.locator('input[placeholder="धा"]')).toHaveCount(192);
+      await expectNoPageOverflow(page);
+    });
+
+    test("play mode prompts for BPM, runs BPM countdown cue, and flows through kayda sections", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      const kaydaOneCard = page.locator("li").filter({
+        has: page.getByText("Teen Taal Kayda - 1", { exact: true }),
+      });
+
+      await kaydaOneCard.getByRole("button").click();
+      await page.getByRole("button", { name: "Play / Practise" }).click();
+
+      await expect(page).toHaveURL(/\/play$/);
+      await expect(
+        page.getByRole("heading", { name: "Set Your Practice Speed (BPM)" }),
+      ).toBeVisible();
+      await expect(page.getByLabel("Practice BPM")).toHaveValue("96");
+      await expect(page.getByText("6 Teentaal cycles/min")).toBeVisible();
+      await expectNoPageOverflow(page);
+
+      // Set fast BPM (360 BPM = 166.7ms/beat) so cue + 48 matras run briskly in e2e
+      await page.getByLabel("Practice BPM").fill("360");
+      await page.getByRole("button", { name: "Start Practise" }).click();
+
+      await expect(page.getByTestId("practice-cue")).toBeVisible();
+      await expect(
+        page.getByTestId("practice-cue-active-number"),
+      ).toHaveText(/^[1-4]$/);
+
+      // Flows from Main Kayda -> Prakaar 1 -> Tihai -> Complete
+      await expect(page.getByTestId("practice-line-0")).toHaveAttribute(
+        "data-active",
+        "true",
+        { timeout: 3000 },
+      );
+      await expect(page.getByTestId("practice-line-1")).toHaveAttribute(
+        "data-active",
+        "true",
+        { timeout: 5000 },
+      );
+      await expect(page.getByTestId("practice-line-2")).toHaveAttribute(
+        "data-active",
+        "true",
+        { timeout: 5000 },
+      );
+      await expect(page.getByTestId("practice-completed")).toBeVisible({
+        timeout: 6000,
+      });
+      await expectNoPageOverflow(page);
+    });
+
+    test("play mode handles 192-matra stress lines without page overflow", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      const stressCard = page
+        .locator("li")
+        .filter({ hasText: "Teen Taal Chakradar Stress" });
+
+      await stressCard.getByRole("button").click();
+      await page.getByRole("button", { name: "Play / Practise" }).click();
+
+      await expect(
+        page.getByRole("heading", { name: "Set Your Practice Speed (BPM)" }),
+      ).toBeVisible();
       await expectNoPageOverflow(page);
     });
   });

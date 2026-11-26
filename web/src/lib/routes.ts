@@ -129,6 +129,10 @@ export function buildCompositionPath(composition: Composition): string {
   )}`;
 }
 
+export function buildCompositionPlayPath(composition: Composition): string {
+  return `${buildCompositionPath(composition)}/play`;
+}
+
 export function compositionIdFromSlug(segment: string): string | undefined {
   const decoded = safeDecode(segment);
   const separatorIndex = decoded.lastIndexOf("--");

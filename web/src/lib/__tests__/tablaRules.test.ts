@@ -13,6 +13,7 @@ import { normalizeComposition } from "../compositionNormalization";
 import { buildCompositionTextSections } from "../exportText";
 import {
   buildCompositionPath,
+  buildCompositionPlayPath,
   compositionRouteKey,
   compositionIdFromSlug,
   findCompositionByRouteId,
@@ -21,6 +22,13 @@ import {
   openingBolSlug,
   parseKindSegment,
 } from "../routes";
+import {
+  beatDurationMs,
+  buildPracticeSequence,
+  cyclesPerMinute,
+  formatCyclesPerMinute,
+  resolvePracticeTimeline,
+} from "../practicePlayback";
 import { transliterateBol } from "../transliteration";
 
 describe("taal marker templates", () => {
@@ -412,5 +420,196 @@ describe("composition normalization", () => {
         },
       ],
     });
+  });
+});
+
+describe("play / practise mode timing and sequence", () => {
+  it("computes 6 Teentaal cycles per minute at 96 BPM", () => {
+    const teentaal = getTaal("teentaal")!;
+    expect(beatDurationMs(96)).toBe(625);
+    expect(cyclesPerMinute(96, teentaal.matras)).toBe(6);
+    expect(formatCyclesPerMinute(96, teentaal.matras)).toBe("6");
+  });
+
+  it("orders a Kayda start-to-end from Main Kayda through Prakaars to Tihai", () => {
+    const teentaal = getTaal("teentaal")!;
+    const composition: Composition = {
+      id: "comp-kayda-play",
+      taalId: "teentaal",
+      kind: "kayda",
+      title: "Teentaal Kayda",
+      lines: [
+        {
+          section: "tihai",
+          sectionTitle: "Tihai",
+          cells: [{ devanagari: "धा" }, { devanagari: "धा" }],
+        },
+        {
+          section: "kayda",
+          sectionTitle: "Main Kayda",
+          cells: [{ devanagari: "धा" }, { devanagari: "तिट" }],
+        },
+        {
+          section: "prakaar",
+          sectionTitle: "Prakaar 1",
+          cells: [{ devanagari: "धा" }, { devanagari: "धिन" }],
+        },
+        {
+          section: "prakaar",
+          sectionTitle: "Prakaar 2",
+          cells: [{ devanagari: "" }, { devanagari: "" }],
+        },
+      ],
+      createdAt: "2026-11-25T00:00:00.000Z",
+      updatedAt: "2026-11-25T00:00:00.000Z",
+    };
+
+    const sequence = buildPracticeSequence(composition, teentaal);
+    expect(sequence.lines.map((line) => line.label)).toEqual([
+      "Main Kayda",
+      "Prakaar 1",
+      "Tihai",
+    ]);
+    expect(sequence.totalBeats).toBe(6);
+    expect(buildCompositionPlayPath(composition)).toMatch(/\/play$/);
+  });
+
+  it("decrements countdown cue numbers at BPM speed and plays through to completion", () => {
+    const teentaal = getTaal("teentaal")!;
+    const composition: Composition = {
+      id: "comp-kayda-cue",
+      taalId: "teentaal",
+      kind: "kayda",
+      title: "Cue Test Kayda",
+      lines: [
+        {
+          section: "kayda",
+          sectionTitle: "Main Kayda",
+          cells: [{ devanagari: "धा" }, { devanagari: "तिट" }],
+        },
+        {
+          section: "prakaar",
+          sectionTitle: "Prakaar 1",
+          cells: [{ devanagari: "धिन" }],
+        },
+        {
+          section: "tihai",
+          sectionTitle: "Tihai",
+          cells: [{ devanagari: "ता" }],
+        },
+      ],
+      createdAt: "2026-11-25T00:00:00.000Z",
+      updatedAt: "2026-11-25T00:00:00.000Z",
+    };
+
+    const sequence = buildPracticeSequence(composition, teentaal);
+    // 96 BPM -> 625ms per beat, 4-beat cue = 2500ms total cue
+    expect(
+      resolvePracticeTimeline({
+        elapsedMs: 10,
+        bpm: 96,
+        cueBeats: 4,
+        sequence,
+        taal: teentaal,
+      }),
+    ).toMatchObject({ phase: "cue", cueNumber: 4 });
+
+    expect(
+      resolvePracticeTimeline({
+        elapsedMs: 630,
+        bpm: 96,
+        cueBeats: 4,
+        sequence,
+        taal: teentaal,
+      }),
+    ).toMatchObject({ phase: "cue", cueNumber: 3 });
+
+    expect(
+      resolvePracticeTimeline({
+        elapsedMs: 1260,
+        bpm: 96,
+        cueBeats: 4,
+        sequence,
+        taal: teentaal,
+      }),
+    ).toMatchObject({ phase: "cue", cueNumber: 2 });
+
+    expect(
+      resolvePracticeTimeline({
+        elapsedMs: 1880,
+        bpm: 96,
+        cueBeats: 4,
+        sequence,
+        taal: teentaal,
+      }),
+    ).toMatchObject({ phase: "cue", cueNumber: 1 });
+
+    // Beat 0 of Main Kayda starts right at 2500ms
+    expect(
+      resolvePracticeTimeline({
+        elapsedMs: 2510,
+        bpm: 96,
+        cueBeats: 4,
+        sequence,
+        taal: teentaal,
+      }),
+    ).toMatchObject({
+      phase: "playing",
+      globalBeatIndex: 0,
+      position: {
+        line: { label: "Main Kayda" },
+        matraInLine: 1,
+        cell: { devanagari: "धा" },
+      },
+    });
+
+    // Beat 2 -> Prakaar 1 at 2500 + 2 * 625 = 3750ms
+    expect(
+      resolvePracticeTimeline({
+        elapsedMs: 3760,
+        bpm: 96,
+        cueBeats: 4,
+        sequence,
+        taal: teentaal,
+      }),
+    ).toMatchObject({
+      phase: "playing",
+      globalBeatIndex: 2,
+      position: {
+        line: { label: "Prakaar 1" },
+        matraInLine: 1,
+        cell: { devanagari: "धिन" },
+      },
+    });
+
+    // Beat 3 -> Tihai at 2500 + 3 * 625 = 4375ms
+    expect(
+      resolvePracticeTimeline({
+        elapsedMs: 4380,
+        bpm: 96,
+        cueBeats: 4,
+        sequence,
+        taal: teentaal,
+      }),
+    ).toMatchObject({
+      phase: "playing",
+      globalBeatIndex: 3,
+      position: {
+        line: { label: "Tihai" },
+        matraInLine: 1,
+        cell: { devanagari: "ता" },
+      },
+    });
+
+    // Completed after 4cue + 4play = 8 * 625 = 5000ms
+    expect(
+      resolvePracticeTimeline({
+        elapsedMs: 5010,
+        bpm: 96,
+        cueBeats: 4,
+        sequence,
+        taal: teentaal,
+      }),
+    ).toEqual({ phase: "completed", totalBeats: 4 });
   });
 });
