@@ -65,38 +65,27 @@ export function CompositionPlayView({
   const [loopEnabled, setLoopEnabled] = useState<boolean>(false);
   const [sessionState, setSessionState] = useState<SessionState>("setup");
   const [elapsedBeatsWithCue, setElapsedBeatsWithCue] = useState<number>(0);
+  const [startOffsetBeat, setStartOffsetBeat] = useState<number>(0);
+  const [sessionRunId, setSessionRunId] = useState<number>(0);
+  const [appHeaderHeight, setAppHeaderHeight] = useState<number>(54);
 
-  const anchorBeatsRef = useRef<number>(0);
-  const anchorTimeMsRef = useRef<number>(0);
-  const lastTriggeredKeyRef = useRef<string>("");
   const audioRef = useRef<PracticeAudioCue | null>(null);
+  const hudRef = useRef<HTMLElement | null>(null);
   const lineRefs = useRef<Record<number, HTMLElement | null>>({});
   const activeCellRef = useRef<HTMLDivElement | null>(null);
+  const lastScrolledLineRef = useRef<string>("");
 
-  const applyBpm = useCallback(
-    (nextBpm: number) => {
-      const clamped = clampPracticeBpm(nextBpm);
-      if (sessionState === "running") {
-        const now = performance.now();
-        const currentBeatMs = beatDurationMs(bpm);
-        const currentBeats =
-          anchorBeatsRef.current + (now - anchorTimeMsRef.current) / currentBeatMs;
-        anchorBeatsRef.current = currentBeats;
-        anchorTimeMsRef.current = now;
-      }
-      setBpm(clamped);
-      setBpmInput(String(clamped));
-      savePracticeBpm(clamped);
-    },
-    [bpm, sessionState],
-  );
-
-  const toggleSound = useCallback(() => {
-    setSoundEnabled((prev) => {
-      const next = !prev;
-      savePracticeSoundEnabled(next);
-      return next;
-    });
+  useEffect(() => {
+    const appHeader = document.querySelector("header");
+    if (!appHeader) return;
+    const updateHeight = () => {
+      setAppHeaderHeight(Math.ceil(appHeader.getBoundingClientRect().height));
+    };
+    updateHeight();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(appHeader);
+    return () => observer.disconnect();
   }, []);
 
   const ensureAudio = useCallback(() => {
@@ -113,7 +102,65 @@ export function CompositionPlayView({
     };
   }, []);
 
-  const [startOffsetBeat, setStartOffsetBeat] = useState<number>(0);
+  /**
+   * Returns the Y coordinate in viewport pixels immediately below any sticky
+   * header + practice HUD so scrolled lines/matras are never occluded.
+   */
+  const getSafeViewportTop = useCallback((): number => {
+    const hudBottom = hudRef.current?.getBoundingClientRect().bottom ?? 0;
+    const appHeader = document.querySelector("header");
+    const headerBottom = appHeader?.getBoundingClientRect().bottom ?? 56;
+    return Math.max(hudBottom, headerBottom) + 14;
+  }, []);
+
+  const scrollLineTopBelowHud = useCallback(
+    (lineIndex: number, behavior: ScrollBehavior = "auto") => {
+      const lineEl = lineRefs.current[lineIndex];
+      if (!lineEl) return;
+      lineEl.scrollLeft = 0;
+      const safeTop = getSafeViewportTop();
+      const lineRect = lineEl.getBoundingClientRect();
+      const deltaY = lineRect.top - safeTop;
+      if (Math.abs(deltaY) > 4) {
+        window.scrollTo({
+          top: Math.max(0, window.scrollY + deltaY),
+          behavior,
+        });
+      }
+    },
+    [getSafeViewportTop],
+  );
+
+  const applyBpm = useCallback(
+    (nextBpm: number) => {
+      const clamped = clampPracticeBpm(nextBpm);
+      setBpm(clamped);
+      setBpmInput(String(clamped));
+      savePracticeBpm(clamped);
+      audioRef.current?.updateConfig({ bpm: clamped });
+    },
+    [],
+  );
+
+  const toggleSound = useCallback(() => {
+    setSoundEnabled((prev) => {
+      const next = !prev;
+      savePracticeSoundEnabled(next);
+      if (next) {
+        ensureAudio().warmUp();
+      }
+      audioRef.current?.updateConfig({ soundEnabled: next });
+      return next;
+    });
+  }, [ensureAudio]);
+
+  const toggleLoop = useCallback(() => {
+    setLoopEnabled((prev) => {
+      const next = !prev;
+      audioRef.current?.updateConfig({ loop: next });
+      return next;
+    });
+  }, []);
 
   const beginSession = useCallback(
     (offsetBeat = 0, withCue = true, overrideBpm?: number) => {
@@ -124,56 +171,50 @@ export function CompositionPlayView({
       setBpmInput(String(committedBpm));
       savePracticeBpm(committedBpm);
 
-      setStartOffsetBeat(withCue ? offsetBeat : 0);
+      const effectiveOffset = withCue ? offsetBeat : 0;
       const startBeats = withCue ? 0 : DEFAULT_CUE_BEATS + offsetBeat;
-      anchorBeatsRef.current = startBeats;
-      anchorTimeMsRef.current = performance.now();
-      lastTriggeredKeyRef.current = "";
+
+      setStartOffsetBeat(effectiveOffset);
       setElapsedBeatsWithCue(startBeats);
+      lastScrolledLineRef.current = "";
+      setSessionRunId((prev) => prev + 1);
       setSessionState("running");
 
+      const engine = ensureAudio();
       if (soundEnabled) {
-        const audio = ensureAudio();
-        if (withCue) {
-          audio.playCueCount(DEFAULT_CUE_BEATS);
-          lastTriggeredKeyRef.current = `cue-${DEFAULT_CUE_BEATS}`;
-        } else if (taal && sequence.totalBeats > 0) {
-          const snap = resolvePracticeTimeline({
-            elapsedMs: startBeats * beatDurationMs(committedBpm),
-            bpm: committedBpm,
-            cueBeats: DEFAULT_CUE_BEATS,
-            sequence,
-            taal,
-            loop: loopEnabled,
-          });
-          if (snap.phase === "playing") {
-            audio.playMatraBeat(snap.position.cell.marker);
-            lastTriggeredKeyRef.current = `play-${snap.loopIteration}-${snap.globalBeatIndex}`;
-          }
-        }
+        engine.warmUp();
       }
+      engine.start(
+        {
+          bpm: committedBpm,
+          cueBeats: DEFAULT_CUE_BEATS,
+          startOffsetBeat: effectiveOffset,
+          sequence,
+          loop: loopEnabled,
+          soundEnabled,
+        },
+        startBeats,
+      );
     },
-    [bpm, bpmInput, ensureAudio, loopEnabled, sequence, soundEnabled, taal],
+    [bpm, bpmInput, ensureAudio, loopEnabled, sequence, soundEnabled],
   );
 
   const pauseSession = useCallback(() => {
     if (sessionState !== "running") return;
-    const now = performance.now();
-    const currentBeats =
-      anchorBeatsRef.current +
-      (now - anchorTimeMsRef.current) / beatDurationMs(bpm);
-    anchorBeatsRef.current = currentBeats;
-    setElapsedBeatsWithCue(currentBeats);
+    const pausedAt = audioRef.current?.pause() ?? elapsedBeatsWithCue;
+    setElapsedBeatsWithCue(pausedAt);
     setSessionState("paused");
-  }, [bpm, sessionState]);
+  }, [elapsedBeatsWithCue, sessionState]);
 
   const resumeSession = useCallback(() => {
     if (sessionState !== "paused") return;
-    anchorTimeMsRef.current = performance.now();
+    if (soundEnabled) {
+      ensureAudio().warmUp();
+    }
+    audioRef.current?.resume();
     setSessionState("running");
-  }, [sessionState]);
+  }, [ensureAudio, sessionState, soundEnabled]);
 
-  // Effective sequence timeline accounting for optional section start offset after cue
   const timeline: PracticeTimelineSnapshot | null = useMemo(() => {
     if (!taal) return null;
     if (sessionState === "setup") return null;
@@ -202,7 +243,7 @@ export function CompositionPlayView({
     taal,
   ]);
 
-  // High-precision animation / timer loop while running
+  // Synchronize UI frames with the PracticeAudioCue output-latency-compensated clock
   useEffect(() => {
     if (sessionState !== "running" || !taal) return;
 
@@ -210,11 +251,11 @@ export function CompositionPlayView({
     let intervalId = 0;
 
     const tick = () => {
-      const now = performance.now();
-      const beatMs = beatDurationMs(bpm);
-      const nextBeats =
-        anchorBeatsRef.current + (now - anchorTimeMsRef.current) / beatMs;
+      const engine = audioRef.current;
+      if (!engine) return;
 
+      const nextBeats = engine.getElapsedBeats();
+      const beatMs = beatDurationMs(bpm);
       const adjustedBeats =
         nextBeats < DEFAULT_CUE_BEATS
           ? nextBeats
@@ -229,27 +270,11 @@ export function CompositionPlayView({
         loop: loopEnabled,
       });
 
-      if (soundEnabled) {
-        if (snap.phase === "cue") {
-          const key = `cue-${snap.cueNumber}`;
-          if (lastTriggeredKeyRef.current !== key) {
-            lastTriggeredKeyRef.current = key;
-            ensureAudio().playCueCount(snap.cueNumber);
-          }
-        } else if (snap.phase === "playing") {
-          const key = `play-${snap.loopIteration}-${snap.globalBeatIndex}`;
-          if (lastTriggeredKeyRef.current !== key) {
-            lastTriggeredKeyRef.current = key;
-            ensureAudio().playMatraBeat(snap.position.cell.marker);
-          }
-        }
-      }
-
       setElapsedBeatsWithCue(nextBeats);
 
       if (snap.phase === "completed") {
+        engine.stop();
         setSessionState("completed");
-        return;
       }
     };
 
@@ -259,23 +284,13 @@ export function CompositionPlayView({
     };
 
     frameId = window.requestAnimationFrame(onAnimationFrame);
-    // Backup interval in case tab RAF throttles slightly
     intervalId = window.setInterval(tick, 40);
 
     return () => {
       window.cancelAnimationFrame(frameId);
       window.clearInterval(intervalId);
     };
-  }, [
-    bpm,
-    ensureAudio,
-    loopEnabled,
-    sequence,
-    sessionState,
-    soundEnabled,
-    startOffsetBeat,
-    taal,
-  ]);
+  }, [bpm, loopEnabled, sequence, sessionState, startOffsetBeat, taal]);
 
   const activeLineIndex =
     timeline?.phase === "playing"
@@ -288,31 +303,85 @@ export function CompositionPlayView({
 
   const activeGlobalBeat =
     timeline?.phase === "playing" ? timeline.globalBeatIndex : -1;
+  const activeLoopIteration =
+    timeline?.phase === "playing" ? timeline.loopIteration : 0;
 
-  // Smoothly keep the active lyric section centered as the composition progresses
+  // Scroll the starting/current section's top cleanly right below the sticky HUD
+  // on every Start, Restart, Loop wrap-around, and Section transition.
   useEffect(() => {
     if (sessionState !== "running" || activeLineIndex < 0) return;
-    const lineEl = lineRefs.current[activeLineIndex];
-    if (!lineEl) return;
-    lineEl.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-    });
-  }, [activeLineIndex, sessionState]);
 
-  // For long multi-cycle lines, keep the active matra cell visible if it scrolls vertically
+    const scrollKey = `${sessionRunId}-${activeLoopIteration}-${activeLineIndex}`;
+    const isInitialOrRestart = lastScrolledLineRef.current === "";
+    if (lastScrolledLineRef.current === scrollKey) return;
+    lastScrolledLineRef.current = scrollKey;
+
+    const behavior: ScrollBehavior =
+      isInitialOrRestart || bpm >= 150 ? "auto" : "smooth";
+
+    // Run after DOM layout settles so sticky HUD height (Cue vs Playing) is exact
+    const rafId = window.requestAnimationFrame(() => {
+      scrollLineTopBelowHud(activeLineIndex, behavior);
+    });
+    return () => window.cancelAnimationFrame(rafId);
+  }, [
+    activeLineIndex,
+    activeLoopIteration,
+    bpm,
+    scrollLineTopBelowHud,
+    sessionRunId,
+    sessionState,
+  ]);
+
+  // Also ensure when transitioning from Cue -> Playing Beat 0, Matra 1 is never above HUD
+  const isCuePhase = timeline?.phase === "cue";
+  useEffect(() => {
+    if (sessionState !== "running" || isCuePhase || activeLineIndex < 0) return;
+    const rafId = window.requestAnimationFrame(() => {
+      const cellEl = activeCellRef.current;
+      if (!cellEl) return;
+      const safeTop = getSafeViewportTop();
+      const rect = cellEl.getBoundingClientRect();
+      if (rect.top < safeTop) {
+        scrollLineTopBelowHud(activeLineIndex, "auto");
+      }
+    });
+    return () => window.cancelAnimationFrame(rafId);
+  }, [
+    activeLineIndex,
+    getSafeViewportTop,
+    isCuePhase,
+    scrollLineTopBelowHud,
+    sessionRunId,
+    sessionState,
+  ]);
+
+  // Within tall multi-cycle sections (e.g. 80- or 192-matra Chakradar Tihai),
+  // advance the viewport row-by-row whenever the active matra approaches the bottom
+  // or falls above the sticky HUD, keeping upcoming rows visible below.
   useEffect(() => {
     if (sessionState !== "running" || activeGlobalBeat < 0) return;
-    const activeLine = sequence.lines[activeLineIndex];
-    if (!activeLine || activeLine.cells.length <= (taal?.matras ?? 16) * 2) {
-      return;
+    const cellEl = activeCellRef.current;
+    if (!cellEl) return;
+
+    const safeTop = getSafeViewportTop();
+    const rect = cellEl.getBoundingClientRect();
+    const bottomThreshold = window.innerHeight - 120;
+
+    if (rect.top < safeTop - 4) {
+      const targetTop = safeTop + 20;
+      window.scrollTo({
+        top: Math.max(0, window.scrollY + (rect.top - targetTop)),
+        behavior: "auto",
+      });
+    } else if (rect.bottom > bottomThreshold && bottomThreshold > safeTop + 60) {
+      const targetTop = safeTop + 28;
+      window.scrollTo({
+        top: Math.max(0, window.scrollY + (rect.top - targetTop)),
+        behavior: bpm >= 150 ? "auto" : "smooth",
+      });
     }
-    activeCellRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-      inline: "nearest",
-    });
-  }, [activeGlobalBeat, activeLineIndex, sequence.lines, sessionState, taal]);
+  }, [activeGlobalBeat, bpm, getSafeViewportTop, sessionState]);
 
   // Keyboard shortcuts: Space to start / pause / resume, Escape to exit
   useEffect(() => {
@@ -328,6 +397,7 @@ export function CompositionPlayView({
 
       if (event.key === "Escape") {
         event.preventDefault();
+        audioRef.current?.stop();
         onExit();
         return;
       }
@@ -377,7 +447,10 @@ export function CompositionPlayView({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
-          onClick={onExit}
+          onClick={() => {
+            audioRef.current?.stop();
+            onExit();
+          }}
           className="text-sm font-medium text-maroon-light hover:text-maroon hover:underline"
         >
           ← Back to composition
@@ -549,7 +622,7 @@ export function CompositionPlayView({
 
               <button
                 type="button"
-                onClick={() => setLoopEnabled((v) => !v)}
+                onClick={toggleLoop}
                 aria-pressed={loopEnabled}
                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-medium transition ${
                   loopEnabled
@@ -564,6 +637,9 @@ export function CompositionPlayView({
             <div className="pt-2 text-center">
               <button
                 type="submit"
+                onPointerDown={() => {
+                  if (soundEnabled) ensureAudio().warmUp();
+                }}
                 disabled={sequence.totalBeats === 0}
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-raga px-7 py-3 text-base font-semibold text-parchment shadow-md transition hover:bg-maroon disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -583,275 +659,281 @@ export function CompositionPlayView({
 
       {/* Sticky Live Transport & Tempo HUD during Cue / Playing / Paused / Completed */}
       {sessionState !== "setup" && (
-        <section
-          aria-label="Practice playback controls"
-          className="sticky top-16 z-10 mb-5 rounded-xl border border-parchment-dark bg-white/95 p-3 shadow-md backdrop-blur sm:p-4"
+        <div
+          style={{ top: `${appHeaderHeight}px` }}
+          className="sticky z-10 -mx-1 mb-5 bg-parchment/95 px-1 pt-2 pb-1 backdrop-blur"
         >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              {sessionState === "running" ? (
-                <button
-                  type="button"
-                  onClick={pauseSession}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-maroon px-3.5 py-2 text-sm font-semibold text-parchment shadow-sm transition hover:bg-maroon-light"
-                >
-                  <PauseIcon className="h-4 w-4" />
-                  Pause
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (sessionState === "paused") {
-                      resumeSession();
-                    } else {
-                      beginSession(0, true);
-                    }
-                  }}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-raga px-3.5 py-2 text-sm font-semibold text-parchment shadow-sm transition hover:bg-maroon"
-                >
-                  <PlayIcon className="h-4 w-4" />
-                  {sessionState === "paused" ? "Resume" : "Play Again"}
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => beginSession(0, true)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-parchment-dark bg-parchment px-3 py-2 text-xs font-semibold text-maroon transition hover:border-saffron"
-                title="Restart from beginning with countdown cue"
-              >
-                <RestartIcon className="h-3.5 w-3.5" />
-                Restart
-              </button>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1.5">
-              <div className="inline-flex items-center rounded-lg border border-parchment-dark bg-parchment px-1.5 py-1 text-xs font-semibold text-ink">
-                <button
-                  type="button"
-                  onClick={() => applyBpm(bpm - 4)}
-                  className="px-1.5 py-0.5 text-maroon hover:text-raga"
-                  aria-label="Slower BPM"
-                >
-                  −
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    pauseSession();
-                    setSessionState("setup");
-                  }}
-                  className="px-2 py-0.5 tabular-nums hover:underline"
-                  title="Change BPM"
-                >
-                  {bpm} BPM
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyBpm(bpm + 4)}
-                  className="px-1.5 py-0.5 text-maroon hover:text-raga"
-                  aria-label="Faster BPM"
-                >
-                  +
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setLoopEnabled((v) => !v)}
-                aria-pressed={loopEnabled}
-                className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${
-                  loopEnabled
-                    ? "border-maroon/35 bg-saffron/25 text-maroon"
-                    : "border-parchment-dark bg-white text-ink/65 hover:border-saffron"
-                }`}
-              >
-                {loopEnabled ? "Loop: On" : "Loop: Off"}
-              </button>
-
-              <button
-                type="button"
-                onClick={toggleSound}
-                aria-pressed={soundEnabled}
-                aria-label={soundEnabled ? "Mute beat audio" : "Unmute beat audio"}
-                className={`inline-flex items-center justify-center rounded-lg border p-2 transition ${
-                  soundEnabled
-                    ? "border-raga/30 bg-raga/10 text-raga"
-                    : "border-parchment-dark bg-white text-ink/45"
-                }`}
-              >
-                <VolumeIcon muted={!soundEnabled} className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-parchment-dark">
-            <div
-              className="h-full rounded-full bg-raga transition-[width] duration-75"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-
-          {/* Countdown Cue Stage */}
-          {timeline?.phase === "cue" && (
-            <div
-              data-testid="practice-cue"
-              role="status"
-              aria-live="polite"
-              className="mt-3 rounded-xl border-2 border-saffron bg-parchment/90 px-4 py-4 text-center"
-            >
-              <p className="text-xs font-semibold tracking-widest text-maroon uppercase">
-                Get Ready · Starting on Sam (×) at {bpm} BPM
-              </p>
-              <div className="mt-2 flex items-center justify-center gap-3">
-                {Array.from({ length: timeline.cueTotalBeats }, (_, idx) => {
-                  const num = timeline.cueTotalBeats - idx;
-                  const isCurrent = num === timeline.cueNumber;
-                  const isPassed = num > timeline.cueNumber;
-                  return (
-                    <span
-                      key={num}
-                      data-testid={
-                        isCurrent ? "practice-cue-active-number" : undefined
+          <section
+            ref={hudRef}
+            aria-label="Practice playback controls"
+            className="rounded-xl border border-parchment-dark bg-white p-3 shadow-md sm:p-4"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {sessionState === "running" ? (
+                  <button
+                    type="button"
+                    onClick={pauseSession}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-maroon px-3.5 py-2 text-sm font-semibold text-parchment shadow-sm transition hover:bg-maroon-light"
+                  >
+                    <PauseIcon className="h-4 w-4" />
+                    Pause
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (sessionState === "paused") {
+                        resumeSession();
+                      } else {
+                        beginSession(0, true);
                       }
-                      className={`inline-flex h-12 w-12 items-center justify-center rounded-full text-xl font-bold tabular-nums transition-all sm:h-14 sm:w-14 sm:text-2xl ${
-                        isCurrent
-                          ? "scale-110 bg-maroon text-parchment shadow-md ring-4 ring-saffron/50"
-                          : isPassed
-                            ? "bg-parchment-dark text-ink/35"
-                            : "border border-parchment-dark bg-white text-ink/60"
-                      }`}
-                    >
-                      {num}
-                    </span>
-                  );
-                })}
-              </div>
-              <p className="mt-2 text-xs text-ink/65">
-                Up first:{" "}
-                <strong className="text-maroon">
-                  {sequence.lines[activeLineIndex]?.label ?? "Line 1"}
-                </strong>
-              </p>
-            </div>
-          )}
-
-          {/* Live Beat / Bol Spotlight during active play or pause */}
-          {timeline?.phase === "playing" && (
-            <div
-              data-testid="practice-live-status"
-              className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-saffron/40 bg-parchment/75 px-3 py-2.5 sm:px-4"
-            >
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="rounded-full bg-saffron/25 px-2.5 py-0.5 font-semibold text-maroon uppercase">
-                    {timeline.position.line.label}
-                  </span>
-                  <span className="text-ink/60 tabular-nums">
-                    Section {timeline.position.lineSequenceIndex + 1} of{" "}
-                    {sequence.lines.length}
-                  </span>
-                  {timeline.loopIteration > 0 && (
-                    <span className="rounded-full bg-raga/10 px-2 py-0.5 font-medium text-raga">
-                      Round {timeline.loopIteration + 1}
-                    </span>
-                  )}
-                  {sessionState === "paused" && (
-                    <span className="rounded-full bg-maroon/15 px-2 py-0.5 font-semibold text-maroon">
-                      Paused
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 text-xs text-ink/65 tabular-nums">
-                  Matra{" "}
-                  <strong className="text-ink">
-                    {timeline.position.matraInLine}
-                  </strong>{" "}
-                  of {timeline.position.line.cells.length}
-                  {timeline.position.totalCyclesInLine > 1 && (
-                    <>
-                      {" "}
-                      · Cycle {timeline.position.cycleInLine}/
-                      {timeline.position.totalCyclesInLine} (Beat{" "}
-                      {timeline.position.matraInCycle}/{taal.matras})
-                    </>
-                  )}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {timeline.position.cell.marker && (
-                  <span className="font-devanagari rounded-md border border-maroon/25 bg-white px-2.5 py-1 text-xs font-bold text-maroon">
-                    {markerBadgeLabel(
-                      timeline.position.cell.marker,
-                      timeline.position.cell.taaliNumber,
-                    )}
-                  </span>
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-raga px-3.5 py-2 text-sm font-semibold text-parchment shadow-sm transition hover:bg-maroon"
+                  >
+                    <PlayIcon className="h-4 w-4" />
+                    {sessionState === "paused" ? "Resume" : "Play Again"}
+                  </button>
                 )}
-                <div className="rounded-lg bg-maroon px-3.5 py-1.5 text-center text-parchment shadow-sm">
-                  {(displayMode === "both" || displayMode === "devanagari") && (
-                    <span className="font-devanagari block text-xl leading-tight font-bold">
-                      {timeline.position.cell.devanagari || "—"}
-                    </span>
-                  )}
-                  {(displayMode === "both" || displayMode === "latin") && (
-                    <span className="block text-xs leading-tight text-parchment/85">
-                      {transliterateBol(timeline.position.cell.devanagari) ||
-                        (timeline.position.cell.devanagari ? "?" : "—")}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Completed Banner */}
-          {sessionState === "completed" && (
-            <div
-              data-testid="practice-completed"
-              role="status"
-              className="mt-3 rounded-xl border border-raga/30 bg-parchment/90 p-4 text-center"
-            >
-              <p className="text-sm font-bold text-raga sm:text-base">
-                Practise Session Complete
-              </p>
-              <p className="mt-1 text-xs text-ink/65">
-                Played {sequence.lines.length} section
-                {sequence.lines.length === 1 ? "" : "s"} ({sequence.totalBeats}{" "}
-                matras) at {bpm} BPM ({cyclesPerMinText} cycles/min).
-              </p>
-              <div className="mt-3 flex flex-wrap justify-center gap-2">
                 <button
                   type="button"
                   onClick={() => beginSession(0, true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-raga px-4 py-2 text-xs font-semibold text-parchment shadow-sm hover:bg-maroon"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-parchment-dark bg-parchment px-3 py-2 text-xs font-semibold text-maroon transition hover:border-saffron"
+                  title="Restart from beginning with countdown cue"
                 >
-                  <PlayIcon className="h-3.5 w-3.5" />
-                  Practise Again ({bpm} BPM)
+                  <RestartIcon className="h-3.5 w-3.5" />
+                  Restart
                 </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                <div className="inline-flex items-center rounded-lg border border-parchment-dark bg-parchment px-1.5 py-1 text-xs font-semibold text-ink">
+                  <button
+                    type="button"
+                    onClick={() => applyBpm(bpm - 4)}
+                    className="px-1.5 py-0.5 text-maroon hover:text-raga"
+                    aria-label="Slower BPM"
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      pauseSession();
+                      setSessionState("setup");
+                    }}
+                    className="px-2 py-0.5 tabular-nums hover:underline"
+                    title="Change BPM"
+                  >
+                    {bpm} BPM
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyBpm(bpm + 4)}
+                    className="px-1.5 py-0.5 text-maroon hover:text-raga"
+                    aria-label="Faster BPM"
+                  >
+                    +
+                  </button>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => {
-                    const faster = clampPracticeBpm(bpm + 8);
-                    beginSession(0, true, faster);
-                  }}
-                  className="rounded-lg border border-maroon/30 bg-white px-3.5 py-2 text-xs font-semibold text-maroon hover:bg-maroon hover:text-parchment"
+                  onClick={toggleLoop}
+                  aria-pressed={loopEnabled}
+                  className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${
+                    loopEnabled
+                      ? "border-maroon/35 bg-saffron/25 text-maroon"
+                      : "border-parchment-dark bg-white text-ink/65 hover:border-saffron"
+                  }`}
                 >
-                  Step Up Speed ({clampPracticeBpm(bpm + 8)} BPM)
+                  {loopEnabled ? "Loop: On" : "Loop: Off"}
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => setSessionState("setup")}
-                  className="rounded-lg border border-parchment-dark bg-white px-3.5 py-2 text-xs font-medium text-ink/75 hover:border-saffron"
+                  onClick={toggleSound}
+                  aria-pressed={soundEnabled}
+                  aria-label={soundEnabled ? "Mute beat audio" : "Unmute beat audio"}
+                  className={`inline-flex items-center justify-center rounded-lg border p-2 transition ${
+                    soundEnabled
+                      ? "border-raga/30 bg-raga/10 text-raga"
+                      : "border-parchment-dark bg-white text-ink/45"
+                  }`}
                 >
-                  Change BPM
+                  <VolumeIcon muted={!soundEnabled} className="h-4 w-4" />
                 </button>
               </div>
             </div>
-          )}
-        </section>
+
+            {/* Progress bar */}
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-parchment-dark">
+              <div
+                className="h-full rounded-full bg-raga transition-[width] duration-75"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+
+            {/* Countdown Cue Stage */}
+            {timeline?.phase === "cue" && (
+              <div
+                data-testid="practice-cue"
+                role="status"
+                aria-live="polite"
+                className="mt-3 rounded-xl border-2 border-saffron bg-parchment/90 px-4 py-4 text-center"
+              >
+                <p className="text-xs font-semibold tracking-widest text-maroon uppercase">
+                  Get Ready · Starting on Sam (×) at {bpm} BPM
+                </p>
+                <div className="mt-2 flex items-center justify-center gap-3">
+                  {Array.from({ length: timeline.cueTotalBeats }, (_, idx) => {
+                    const num = timeline.cueTotalBeats - idx;
+                    const isCurrent = num === timeline.cueNumber;
+                    const isPassed = num > timeline.cueNumber;
+                    return (
+                      <span
+                        key={num}
+                        data-testid={
+                          isCurrent ? "practice-cue-active-number" : undefined
+                        }
+                        className={`inline-flex h-12 w-12 items-center justify-center rounded-full text-xl font-bold tabular-nums transition-all sm:h-14 sm:w-14 sm:text-2xl ${
+                          isCurrent
+                            ? "scale-110 bg-maroon text-parchment shadow-md ring-4 ring-saffron/50"
+                            : isPassed
+                              ? "bg-parchment-dark text-ink/35"
+                              : "border border-parchment-dark bg-white text-ink/60"
+                        }`}
+                      >
+                        {num}
+                      </span>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-xs text-ink/65">
+                  Up first:{" "}
+                  <strong className="text-maroon">
+                    {sequence.lines[activeLineIndex]?.label ?? "Line 1"}
+                  </strong>
+                </p>
+              </div>
+            )}
+
+            {/* Live Beat / Bol Spotlight during active play or pause */}
+            {timeline?.phase === "playing" && (
+              <div
+                data-testid="practice-live-status"
+                className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-saffron/40 bg-parchment/75 px-3 py-2.5 sm:px-4"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="rounded-full bg-saffron/25 px-2.5 py-0.5 font-semibold text-maroon uppercase">
+                      {timeline.position.line.label}
+                    </span>
+                    <span className="text-ink/60 tabular-nums">
+                      Section {timeline.position.lineSequenceIndex + 1} of{" "}
+                      {sequence.lines.length}
+                    </span>
+                    {timeline.loopIteration > 0 && (
+                      <span className="rounded-full bg-raga/10 px-2 py-0.5 font-medium text-raga">
+                        Round {timeline.loopIteration + 1}
+                      </span>
+                    )}
+                    {sessionState === "paused" && (
+                      <span className="rounded-full bg-maroon/15 px-2 py-0.5 font-semibold text-maroon">
+                        Paused
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-ink/65 tabular-nums">
+                    Matra{" "}
+                    <strong className="text-ink">
+                      {timeline.position.matraInLine}
+                    </strong>{" "}
+                    of {timeline.position.line.cells.length}
+                    {timeline.position.totalCyclesInLine > 1 && (
+                      <>
+                        {" "}
+                        · Cycle {timeline.position.cycleInLine}/
+                        {timeline.position.totalCyclesInLine} (Beat{" "}
+                        {timeline.position.matraInCycle}/{taal.matras})
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {timeline.position.cell.marker && (
+                    <span className="font-devanagari rounded-md border border-maroon/25 bg-white px-2.5 py-1 text-xs font-bold text-maroon">
+                      {markerBadgeLabel(
+                        timeline.position.cell.marker,
+                        timeline.position.cell.taaliNumber,
+                      )}
+                    </span>
+                  )}
+                  <div className="rounded-lg bg-maroon px-3.5 py-1.5 text-center text-parchment shadow-sm">
+                    {(displayMode === "both" || displayMode === "devanagari") && (
+                      <span className="font-devanagari block text-xl leading-tight font-bold">
+                        {timeline.position.cell.devanagari || "—"}
+                      </span>
+                    )}
+                    {(displayMode === "both" || displayMode === "latin") && (
+                      <span className="block text-xs leading-tight text-parchment/85">
+                        {transliterateBol(timeline.position.cell.devanagari) ||
+                          (timeline.position.cell.devanagari ? "?" : "—")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Completed Banner */}
+            {sessionState === "completed" && (
+              <div
+                data-testid="practice-completed"
+                role="status"
+                className="mt-3 rounded-xl border border-raga/30 bg-parchment/90 p-4 text-center"
+              >
+                <p className="text-sm font-bold text-raga sm:text-base">
+                  Practise Session Complete
+                </p>
+                <p className="mt-1 text-xs text-ink/65">
+                  Played {sequence.lines.length} section
+                  {sequence.lines.length === 1 ? "" : "s"} ({sequence.totalBeats}{" "}
+                  matras) at {bpm} BPM ({cyclesPerMinText} cycles/min).
+                </p>
+                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => beginSession(0, true)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-raga px-4 py-2 text-xs font-semibold text-parchment shadow-sm hover:bg-maroon"
+                  >
+                    <PlayIcon className="h-3.5 w-3.5" />
+                    Practise Again ({bpm} BPM)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const faster = clampPracticeBpm(bpm + 8);
+                      beginSession(0, true, faster);
+                    }}
+                    className="rounded-lg border border-maroon/30 bg-white px-3.5 py-2 text-xs font-semibold text-maroon hover:bg-maroon hover:text-parchment"
+                  >
+                    Step Up Speed ({clampPracticeBpm(bpm + 8)} BPM)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSessionState("setup")}
+                    className="rounded-lg border border-parchment-dark bg-white px-3.5 py-2 text-xs font-medium text-ink/75 hover:border-saffron"
+                  >
+                    Change BPM
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
       )}
 
       {/* Lyrics-Style Continuous Composition Flow (Main Kayda -> Prakaars -> Tihai) */}
@@ -983,7 +1065,8 @@ export function CompositionPlayView({
                           data-testid={
                             isCurrentBeat ? "practice-active-matra" : undefined
                           }
-                          className={`flex shrink-0 flex-col items-center rounded-lg px-1 py-1 text-center transition-colors duration-100 w-max min-w-[3.9rem] sm:min-w-[4.75rem] md:min-w-[5.4rem] ${
+                          data-matra-index={cellIndex + 1}
+                          className={`flex w-max min-w-[3.9rem] shrink-0 flex-col items-center rounded-lg px-1 py-1 text-center transition-colors duration-100 sm:min-w-[4.75rem] md:min-w-[5.4rem] ${
                             isCurrentBeat
                               ? "bg-maroon text-parchment shadow-md ring-2 ring-saffron"
                               : isPlayedBeatInLine
@@ -1011,7 +1094,7 @@ export function CompositionPlayView({
                           )}
                           {showLatin && (
                             <span
-                              className={`whitespace-nowrap text-center tracking-tight text-[11px] leading-tight sm:text-xs ${
+                              className={`whitespace-nowrap text-center text-[11px] leading-tight tracking-tight sm:text-xs ${
                                 showDev ? "mt-0.5" : "text-base font-medium"
                               } ${
                                 isCurrentBeat

@@ -338,7 +338,7 @@ for (const viewport of viewports) {
       await expectNoPageOverflow(page);
     });
 
-    test("play mode handles 192-matra stress lines without page overflow", async ({
+    test("play mode handles 192-matra chakradar start and restart scroll alignment without overflow", async ({
       page,
     }) => {
       await page.goto("/");
@@ -352,6 +352,57 @@ for (const viewport of viewports) {
       await expect(
         page.getByRole("heading", { name: "Set Your Practice Speed (BPM)" }),
       ).toBeVisible();
+      await expectNoPageOverflow(page);
+
+      // Scroll far down before starting, then start at 200 BPM
+      await page.evaluate(() => window.scrollTo(0, 1400));
+      await page.getByLabel("Practice BPM").fill("200");
+      await page.getByRole("button", { name: "Start Practise" }).click();
+
+      const hud = page.getByRole("region", {
+        name: "Practice playback controls",
+      });
+      const firstMatra = page
+        .getByTestId("practice-line-0")
+        .locator('[data-matra-index="1"]');
+
+      await expect(hud).toBeVisible();
+
+      // Verify Matra 1 of Chakradar Tihai 1 sits cleanly below sticky HUD and within viewport
+      await expect
+        .poll(async () => {
+          const hudBox = await hud.boundingBox();
+          const matraBox = await firstMatra.boundingBox();
+          if (!hudBox || !matraBox) return false;
+          const hudBottom = hudBox.y + hudBox.height;
+          return (
+            matraBox.y >= hudBottom &&
+            matraBox.y + matraBox.height <= viewport.size.height
+          );
+        })
+        .toBe(true);
+
+      // Wait until playing begins, scroll far down mid-chakradar, then click Restart
+      await expect(page.getByTestId("practice-live-status")).toBeVisible({
+        timeout: 4000,
+      });
+      await page.evaluate(() => window.scrollTo(0, 1800));
+      await page.getByRole("button", { name: "Restart" }).click();
+
+      await expect(page.getByTestId("practice-cue")).toBeVisible();
+      await expect
+        .poll(async () => {
+          const hudBox = await hud.boundingBox();
+          const matraBox = await firstMatra.boundingBox();
+          if (!hudBox || !matraBox) return false;
+          const hudBottom = hudBox.y + hudBox.height;
+          return (
+            matraBox.y >= hudBottom &&
+            matraBox.y + matraBox.height <= viewport.size.height
+          );
+        })
+        .toBe(true);
+
       await expectNoPageOverflow(page);
     });
   });
